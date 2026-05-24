@@ -1,0 +1,7 @@
+base   normi
+author Marcel Keienborg
+email  marcel@aufentha.lt
+date   2026-05-24
+name   normi plugin
+desc   Generate automatic links to pages for individual legal provisions
+url    https://www.dokuwiki.org/plugin:normi
