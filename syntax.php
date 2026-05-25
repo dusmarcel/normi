@@ -86,7 +86,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
         $pattern = '(?:Art\.|Artikel) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)? (?:'
             . implode('|', array_map('preg_quote', $synonyms))
-            . '|(?:Verordnung|Richtlinie) \(EU\) [0-9]{4}/[0-9]+)';
+            . '|(?:Verordnung|Richtlinie) \(EU\) [0-9]{4}\/[0-9]+)';
 
         $this->Lexer->addSpecialPattern($pattern, $mode, 'plugin_normi');
     }
