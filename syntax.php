@@ -22,6 +22,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         ],
         'aufnahmerichtlinie' => [
             'Aufnahmerichtlinie', 'AufnahmeRL',
+            'Aufnahmerichtlinie 2024', 'AufnahmeRL 2024',
         ],
         'grenzrückführungsverordnung' => [
             'Grenzrückführungsverordnung', 'GrenzrückführungsVO',
@@ -41,12 +42,33 @@ class syntax_plugin_normi extends SyntaxPlugin
         ],
         'eurodac-verordnung' => [
             'Eurodac-Verordnung', 'Eurodac-VO',
+            'Eurodac-Verordnung 2024', 'Eurodac-VO 2024',
         ],
         'krisenverordnung' => [
             'Krisenverordnung', 'KrisenVO',
         ],
         'euaa-verordnung' => [
             'EUAA-Verordnung', 'EUAA-VO',
+        ],
+        'aufnahmerichtlinie-2013' => [
+            'Aufnahmerichtlinie 2013', 'AufnahmeRL 2013',
+        ],
+        'qualifikationsrichtlinie' => [
+            'Qualifikationsrichtlinie', 'QualifikationsRL',
+            'Anerkennungsrichtlinie', 'AnerkennungsRL',
+        ],
+        'asylverfahrensrichtlinie' => [
+            'Asylverfahrensrichtlinie', 'AsylverfahrensRL',
+        ],
+        'dublin-iii-verordnung' => [
+            'Dublin-III-Verordnung', 'Dublin-III-VO', 'DublinVO',
+            'Dublin III', 'Dublin-III',
+        ],
+        'eurodac-verordnung-2013' => [
+            'Eurodac-Verordnung 2013', 'Eurodac-VO 2013',
+        ],
+        'easo-verordnung' => [
+            'EASO-Verordnung', 'EASO-VO',
         ],
     ];
 
@@ -63,6 +85,12 @@ class syntax_plugin_normi extends SyntaxPlugin
         'eurodac-verordnung'              => 'verordnung_eu_2024_1358',
         'krisenverordnung'                => 'verordnung_eu_2024_1359',
         'euaa-verordnung'                 => 'verordnung_eu_2021_2303',
+        'aufnahmerichtlinie-2013'         => 'richtlinie_eu_2013_33',
+        'qualifikationsrichtlinie'        => 'richtlinie_eu_2011_95',
+        'asylverfahrensrichtlinie'        => 'richtlinie_eu_2013_32',
+        'dublin-iii-verordnung'           => 'verordnung_eu_nr_604_2013',
+        'eurodac-verordnung-2013'         => 'verordnung_eu_nr_603_2013',
+        'easo-verordnung'                 => 'verordnung_eu_nr_439_2010',
     ];
 
     // EU regulation/directive number => canonical page slug
@@ -78,6 +106,14 @@ class syntax_plugin_normi extends SyntaxPlugin
         '2024/1358' => 'eurodac-verordnung',
         '2024/1359' => 'krisenverordnung',
         '2021/2303' => 'euaa-verordnung',
+        // Old regulation format: (EU) Nr. NNNN/YYYY
+        '604/2013'  => 'dublin-iii-verordnung',
+        '603/2013'  => 'eurodac-verordnung-2013',
+        '439/2010'  => 'easo-verordnung',
+        // Old directive format: YYYY/NN/EU
+        '2013/33'   => 'aufnahmerichtlinie-2013',
+        '2011/95'   => 'qualifikationsrichtlinie',
+        '2013/32'   => 'asylverfahrensrichtlinie',
     ];
 
     /** @inheritDoc */
@@ -99,8 +135,10 @@ class syntax_plugin_normi extends SyntaxPlugin
         foreach (self::REGULATIONS as $terms) {
             $synonyms = array_merge($synonyms, $terms);
         }
+        usort($synonyms, fn($a, $b) => strlen($b) - strlen($a));
         $synonymPattern = implode('|', array_map('preg_quote', $synonyms));
-        $euPattern      = '(?:Verordnung|Richtlinie) \(EU\) [0-9]{4}\/[0-9]+';
+        // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU
+        $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+\/EU)';
 
         $subParts = '(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: lit\. [a-z]\))?)?';
 
@@ -137,7 +175,16 @@ class syntax_plugin_normi extends SyntaxPlugin
 
     private function resolveRegulation(string $term): ?string
     {
+        // New format: (EU) YYYY/NNNN
         if (preg_match('/^(?:Verordnung|Richtlinie) \(EU\) ([0-9]{4}\/[0-9]+)$/', $term, $eu)) {
+            return self::EU_NUMBERS[$eu[1]] ?? null;
+        }
+        // Old regulation format: (EU) Nr. NNNN/YYYY
+        if (preg_match('/^(?:Verordnung|Richtlinie) \(EU\) Nr\. ([0-9]+\/[0-9]{4})$/', $term, $eu)) {
+            return self::EU_NUMBERS[$eu[1]] ?? null;
+        }
+        // Old directive format: YYYY/NN/EU
+        if (preg_match('/^Richtlinie ([0-9]{4}\/[0-9]+)\/EU$/', $term, $eu)) {
             return self::EU_NUMBERS[$eu[1]] ?? null;
         }
         foreach (self::REGULATIONS as $slug => $synonyms) {
