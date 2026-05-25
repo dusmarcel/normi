@@ -85,12 +85,12 @@ class syntax_plugin_normi extends SyntaxPlugin
         'eurodac-verordnung'              => 'verordnung_eu_2024_1358',
         'krisenverordnung'                => 'verordnung_eu_2024_1359',
         'euaa-verordnung'                 => 'verordnung_eu_2021_2303',
-        'aufnahmerichtlinie-2013'         => 'richtlinie_eu_2013_33',
-        'qualifikationsrichtlinie'        => 'richtlinie_eu_2011_95',
-        'asylverfahrensrichtlinie'        => 'richtlinie_eu_2013_32',
-        'dublin-iii-verordnung'           => 'verordnung_eu_nr_604_2013',
-        'eurodac-verordnung-2013'         => 'verordnung_eu_nr_603_2013',
-        'easo-verordnung'                 => 'verordnung_eu_nr_439_2010',
+        'aufnahmerichtlinie-2013'         => 'richtlinie_2013_33_eu',
+        'qualifikationsrichtlinie'        => 'richtlinie_2011_95_eu',
+        'asylverfahrensrichtlinie'        => 'richtlinie_2013_32_eu',
+        'dublin-iii-verordnung'           => 'verordnung_eu_nr._604_2013',
+        'eurodac-verordnung-2013'         => 'verordnung_eu_nr._603_2013',
+        'easo-verordnung'                 => 'verordnung_eu_nr._439_2010',
     ];
 
     // EU regulation/directive number => canonical page slug
