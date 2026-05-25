@@ -18,7 +18,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             'Statusverordnung', 'StatusVO',
         ],
         'asylverfahrensverordnung' => [
-            'Asylverfahrensverordnung', 'AsylverfahrensVO',
+            'Asylverfahrensverordnung', 'AsylverfahrensVO', 'AVVO',
         ],
         'aufnahmerichtlinie' => [
             'Aufnahmerichtlinie', 'AufnahmeRL',

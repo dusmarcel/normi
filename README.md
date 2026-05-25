@@ -33,7 +33,7 @@ Art. 7 Abs. 2 Nr. 3 lit. b) AMMVO
 | Rechtsakt | Synonyme |
 |---|---|
 | Anerkennungsverordnung (EU) 2024/1347 | Qualifikationsverordnung, AnerkennungsVO, QualifikationsVO, QVO, Statusverordnung, StatusVO |
-| Asylverfahrensverordnung (EU) 2024/1348 | AsylverfahrensVO |
+| Asylverfahrensverordnung (EU) 2024/1348 | AsylverfahrensVO, AVVO |
 | Aufnahmerichtlinie (EU) 2024/1346 | AufnahmeRL, Aufnahmerichtlinie 2024, AufnahmeRL 2024 |
 | Grenzrückführungsverordnung (EU) 2024/1349 | GrenzrückführungsVO, GrenzRüFüVO, GrenzRFVO |
 | Resettlementverordnung (EU) 2024/1350 | ResettlementVO |
