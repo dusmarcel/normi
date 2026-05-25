@@ -50,6 +50,21 @@ class syntax_plugin_normi extends SyntaxPlugin
         ],
     ];
 
+    // Canonical page slug => start page
+    const START_PAGES = [
+        'anerkennungsverordnung'          => 'verordnung_eu_2024_1347',
+        'asylverfahrensverordnung'        => 'verordnung_eu_2024_1348',
+        'aufnahmerichtlinie'              => 'richtlinie_eu_2024_1346',
+        'grenzrückführungsverordnung'     => 'verordnung_eu_2024_1349',
+        'resettlementverordnung'          => 'verordnung_eu_2024_1350',
+        'ammvo'                           => 'verordnung_eu_2024_1351',
+        'screening-konsistenz-verordnung' => 'verordnung_eu_2024_1352',
+        'screening-verordnung'            => 'verordnung_eu_2024_1356',
+        'eurodac-verordnung'              => 'verordnung_eu_2024_1358',
+        'krisenverordnung'                => 'verordnung_eu_2024_1359',
+        'euaa-verordnung'                 => 'verordnung_eu_2021_2303',
+    ];
+
     // EU regulation/directive number => canonical page slug
     const EU_NUMBERS = [
         '2024/1346' => 'aufnahmerichtlinie',
@@ -84,33 +99,51 @@ class syntax_plugin_normi extends SyntaxPlugin
         foreach (self::REGULATIONS as $terms) {
             $synonyms = array_merge($synonyms, $terms);
         }
-        $pattern = '(?:Art\.|Artikel) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)? (?:'
-            . implode('|', array_map('preg_quote', $synonyms))
-            . '|(?:Verordnung|Richtlinie) \(EU\) [0-9]{4}\/[0-9]+)';
+        $synonymPattern = implode('|', array_map('preg_quote', $synonyms));
+        $euPattern      = '(?:Verordnung|Richtlinie) \(EU\) [0-9]{4}\/[0-9]+';
 
-        $this->Lexer->addSpecialPattern($pattern, $mode, 'plugin_normi');
+        $this->Lexer->addSpecialPattern(
+            '(?:Art\.|Artikel) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)? (?:' . $synonymPattern . '|' . $euPattern . ')',
+            $mode,
+            'plugin_normi'
+        );
+
+        $this->Lexer->addSpecialPattern(
+            '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            $mode,
+            'plugin_normi'
+        );
     }
 
     /** @inheritDoc */
     public function handle($match, $state, $pos, Doku_Handler $handler)
     {
-        preg_match('/^(?:Art\.|Artikel) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)? (.+)$/', $match, $m);
-        $article = strtolower($m[1]);
-        $term    = $m[2];
-
-        if (preg_match('/^(?:Verordnung|Richtlinie) \(EU\) ([0-9]{4}\/[0-9]+)$/', $term, $eu)) {
-            $regulation = self::EU_NUMBERS[$eu[1]] ?? null;
-        } else {
-            $regulation = null;
-            foreach (self::REGULATIONS as $slug => $synonyms) {
-                if (in_array($term, $synonyms, true)) {
-                    $regulation = $slug;
-                    break;
-                }
-            }
+        if (preg_match('/^(?:Art\.|Artikel) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)? (.+)$/', $match, $m)) {
+            return [
+                'match'      => $match,
+                'article'    => strtolower($m[1]),
+                'regulation' => $this->resolveRegulation($m[2]),
+            ];
         }
 
-        return ['match' => $match, 'article' => $article, 'regulation' => $regulation];
+        return [
+            'match'      => $match,
+            'article'    => null,
+            'regulation' => $this->resolveRegulation($match),
+        ];
+    }
+
+    private function resolveRegulation(string $term): ?string
+    {
+        if (preg_match('/^(?:Verordnung|Richtlinie) \(EU\) ([0-9]{4}\/[0-9]+)$/', $term, $eu)) {
+            return self::EU_NUMBERS[$eu[1]] ?? null;
+        }
+        foreach (self::REGULATIONS as $slug => $synonyms) {
+            if (in_array($term, $synonyms, true)) {
+                return $slug;
+            }
+        }
+        return null;
     }
 
     /** @inheritDoc */
@@ -126,7 +159,12 @@ class syntax_plugin_normi extends SyntaxPlugin
             return true;
         }
 
-        $pageId = 'art._' . $data['article'] . '_' . $data['regulation'];
+        if ($data['article'] === null) {
+            $pageId = self::START_PAGES[$data['regulation']];
+        } else {
+            $pageId = 'art._' . $data['article'] . '_' . $data['regulation'];
+        }
+
         $renderer->internallink($pageId, $data['match']);
 
         return true;
