@@ -8,7 +8,9 @@ Das Plugin muss unter `lib/plugins/normi/` in der DokuWiki-Installation abgelegt
 
 ## Verwendung
 
-Sobald das Plugin aktiv ist, werden Verweise auf Artikel von bekannten Rechtsakten automatisch verlinkt. Der Link zeigt stets auf den erstgenannten Artikel.
+Sobald das Plugin aktiv ist, werden Verweise auf Artikel von bekannten Rechtsakten automatisch verlinkt. Der Link zeigt stets auf die Seite des genannten Artikels.
+
+Nach der Artikelnummer können optional Untereinheiten in folgender Reihenfolge angegeben werden: **Absatz** (`Absatz`/`Abs.`), **Unterabsatz** (`Unterabsatz`/`UA`), **Satz** (`Satz`/`S.`), **Nummer** (`Nummer`/`Nr.`) und **Buchstabe** (`lit. a)`). Alle diese Angaben sind optional; soweit sie erscheinen, müssen sie in dieser Reihenfolge stehen. Sie beeinflussen nur den Linktext, nicht das Linkziel.
 
 **Beispiele:**
 
@@ -18,6 +20,10 @@ Artikel 12a AsylverfahrensVO
 Art. 1 f. AufnahmeRL
 Art. 3 ff. Verordnung (EU) 2024/1351
 Art. 7 bis 9 Krisenverordnung
+Art. 7 Abs. 1 AMMVO
+Artikel 7 Absatz 1 AMMVO
+Artikel 7 Absatz 1 Satz 2 AMMVO
+Art. 7 Abs. 2 Nr. 3 lit. b) AMMVO
 ```
 
 ## Unterstützte Rechtsakte

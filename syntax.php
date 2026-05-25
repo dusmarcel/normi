@@ -102,8 +102,10 @@ class syntax_plugin_normi extends SyntaxPlugin
         $synonymPattern = implode('|', array_map('preg_quote', $synonyms));
         $euPattern      = '(?:Verordnung|Richtlinie) \(EU\) [0-9]{4}\/[0-9]+';
 
+        $subParts = '(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: lit\. [a-z]\))?)?';
+
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)? (?:' . $synonymPattern . '|' . $euPattern . ')',
+            '(?:Art\.|Artikel) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' (?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -118,7 +120,7 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** @inheritDoc */
     public function handle($match, $state, $pos, Doku_Handler $handler)
     {
-        if (preg_match('/^(?:Art\.|Artikel) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)? (.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: lit\. [a-z]\))?)? (.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
