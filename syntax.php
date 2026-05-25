@@ -63,6 +63,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         'dublin-iii-verordnung' => [
             'Dublin-III-Verordnung', 'Dublin-III-VO', 'DublinVO',
             'Dublin III', 'Dublin-III',
+            'Dublin III-Verordnung', 'Dublin III-VO',
         ],
         'eurodac-verordnung-2013' => [
             'Eurodac-Verordnung 2013', 'Eurodac-VO 2013',
