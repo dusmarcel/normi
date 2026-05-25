@@ -68,7 +68,7 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** @inheritDoc */
     public function getType()
     {
-        return 'substitution';
+        return 'substition';
     }
 
     /** @inheritDoc */
