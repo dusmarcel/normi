@@ -12,19 +12,25 @@ Sobald das Plugin aktiv ist, werden Verweise auf Artikel von bekannten Rechtsakt
 
 Nach der Artikelnummer können optional Untereinheiten in folgender Reihenfolge angegeben werden: **Absatz** (`Absatz`/`Abs.`), **Unterabsatz** (`Unterabsatz`/`UA`), **Satz** (`Satz`/`S.`), **Nummer** (`Nummer`/`Nr.`) und **Buchstabe** (`lit. a)`). Alle diese Angaben sind optional; soweit sie erscheinen, müssen sie in dieser Reihenfolge stehen. Sie beeinflussen nur den Linktext, nicht das Linkziel.
 
+**Aufzählungen** mit Komma und/oder „und" werden erkannt: Jeder genannte Artikel erhält einen eigenen Link.
+
+**Bereichsangaben** mit „bis" werden ebenfalls erkannt: Der erste und der letzte Artikel werden je einzeln verlinkt, „bis" bleibt als Klartext erhalten.
+
 **Beispiele:**
 
-```
-Art. 5 Anerkennungsverordnung
-Artikel 12a AsylverfahrensVO
-Art. 1 f. AufnahmeRL
-Art. 3 ff. Verordnung (EU) 2024/1351
-Art. 7 bis 9 Krisenverordnung
-Art. 7 Abs. 1 AMMVO
-Artikel 7 Absatz 1 AMMVO
-Artikel 7 Absatz 1 Satz 2 AMMVO
-Art. 7 Abs. 2 Nr. 3 lit. b) AMMVO
-```
+| Wikitext | Ergebnis |
+|---|---|
+| `Art. 5 Anerkennungsverordnung` | Ein Link auf Art. 5 |
+| `Artikel 12a AsylverfahrensVO` | Ein Link auf Art. 12a |
+| `Art. 1 f. AufnahmeRL` | Ein Link (f. beeinflusst nur den Linktext) |
+| `Art. 3 ff. Verordnung (EU) 2024/1351` | Ein Link |
+| `Art. 7 Abs. 1 AMMVO` | Ein Link auf Art. 7 |
+| `Artikel 7 Absatz 1 Satz 2 AMMVO` | Ein Link auf Art. 7 |
+| `Art. 7 Abs. 2 Nr. 3 lit. b) AMMVO` | Ein Link auf Art. 7 |
+| `Art. 23, 24 AVVO` | Zwei Links (Art. 23 und 24) |
+| `Art. 23 und 24 AVVO` | Zwei Links |
+| `Art. 23, 24 und 25 AVVO` | Drei Links |
+| `Art. 7 bis 9 Krisenverordnung` | Zwei Links (Art. 7 und Art. 9), „bis" als Klartext |
 
 ## Unterstützte Rechtsakte
 
