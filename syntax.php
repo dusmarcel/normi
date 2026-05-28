@@ -71,6 +71,16 @@ class syntax_plugin_normi extends SyntaxPlugin
         'easo-verordnung' => [
             'EASO-Verordnung', 'EASO-VO',
         ],
+        'aufenthaltsgesetz' => [
+            'Aufenthaltsgesetz', 'AufenthG',
+        ],
+        'asylgesetz' => [
+            'Asylgesetz', 'AsylG',
+        ],
+        '__current__' => [
+            'vorliegenden Verordnung', 'vorliegenden Richtlinie', 'vorliegenden Gesetzes',
+            'vorliegende Verordnung', 'vorliegende Richtlinie',
+        ],
     ];
 
     // Canonical page slug => start page
@@ -92,6 +102,8 @@ class syntax_plugin_normi extends SyntaxPlugin
         'dublin-iii-verordnung'           => 'verordnung_eu_nr._604_2013',
         'eurodac-verordnung-2013'         => 'verordnung_eu_nr._603_2013',
         'easo-verordnung'                 => 'verordnung_eu_nr._439_2010',
+        'aufenthaltsgesetz'               => 'aufenthaltsgesetz',
+        'asylgesetz'                      => 'asylgesetz',
     ];
 
     // EU regulation/directive number => canonical page slug
@@ -141,16 +153,37 @@ class syntax_plugin_normi extends SyntaxPlugin
         // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+\/EU)';
 
-        $subParts = '(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: lit\. [a-z]\))?)?';
+        $subParts = '(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?)?';
+
+        $nationalSynonyms = [];
+        foreach (['aufenthaltsgesetz', 'asylgesetz'] as $slug) {
+            $nationalSynonyms = array_merge($nationalSynonyms, self::REGULATIONS[$slug]);
+        }
+        usort($nationalSynonyms, fn($a, $b) => strlen($b) - strlen($a));
+        $nationalPattern = implode('|', array_map('preg_quote', $nationalSynonyms));
+
+        $artPfx  = '(?:der |des |dem |die |den )?';
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel) [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ (?:' . $synonymPattern . '|' . $euPattern . ')',
+            '§§? [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' (?:' . $synonymPattern . '|' . $euPattern . ')',
+            '§§? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
+            $mode,
+            'plugin_normi'
+        );
+
+        $this->Lexer->addSpecialPattern(
+            '(?:Art\.|Artikel) [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            $mode,
+            'plugin_normi'
+        );
+
+        $this->Lexer->addSpecialPattern(
+            '(?:Art\.|Artikel) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -165,7 +198,7 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** @inheritDoc */
     public function handle($match, $state, $pos, Doku_Handler $handler)
     {
-        if (preg_match('/^((?:Art\.|Artikel) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+) (.+)$/', $match, $m)) {
+        if (preg_match('/^((?:Art\.|Artikel|§§?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+) (.+)$/', $match, $m)) {
             preg_match_all('/((?:,| und) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
             $connectors = [];
@@ -180,22 +213,22 @@ class syntax_plugin_normi extends SyntaxPlugin
                 'prefix'     => $m[1],
                 'reg_text'   => $m[4],
                 'article'    => null,
-                'regulation' => $this->resolveRegulation($m[4]),
+                'regulation' => $this->resolveRegulation(preg_replace('/^(?:der|des|dem|die|den) /', '', $m[4])),
             ];
         }
 
-        if (preg_match('/^((?:Art\.|Artikel) )([0-9]+[a-z]?) bis ([0-9]+[a-z]?) (.+)$/', $match, $m)) {
+        if (preg_match('/^((?:Art\.|Artikel|§§?) )([0-9]+[a-z]?) bis ([0-9]+[a-z]?) (.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'prefix'     => $m[1],
                 'article'    => strtolower($m[2]),
                 'article_to' => strtolower($m[3]),
                 'reg_text'   => $m[4],
-                'regulation' => $this->resolveRegulation($m[4]),
+                'regulation' => $this->resolveRegulation(preg_replace('/^(?:der|des|dem|die|den) /', '', $m[4])),
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: lit\. [a-z]\))?)? (.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|§§?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\))?)?)? (?:der |des |dem |die |den )?(.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
@@ -232,6 +265,32 @@ class syntax_plugin_normi extends SyntaxPlugin
         return null;
     }
 
+    /** false = not yet resolved, null = not found, string = slug */
+    private $resolvedCurrentRegulation = false;
+
+    private function resolveCurrentRegulation(): ?string
+    {
+        if ($this->resolvedCurrentRegulation !== false) {
+            return $this->resolvedCurrentRegulation;
+        }
+        global $ID;
+        $title = $ID ? (p_get_metadata($ID, 'title') ?? '') : '';
+        $bestSlug = null;
+        $bestLen = 0;
+        foreach (self::REGULATIONS as $slug => $synonyms) {
+            if ($slug === '__current__') continue;
+            foreach ($synonyms as $synonym) {
+                $len = mb_strlen($synonym);
+                if ($len > $bestLen && mb_stripos($title, $synonym) !== false) {
+                    $bestLen = $len;
+                    $bestSlug = $slug;
+                }
+            }
+        }
+        $this->resolvedCurrentRegulation = $bestSlug;
+        return $bestSlug;
+    }
+
     /** @inheritDoc */
     public function render($mode, Doku_Renderer $renderer, $data)
     {
@@ -240,15 +299,25 @@ class syntax_plugin_normi extends SyntaxPlugin
             return false;
         }
 
-        if ($data['regulation'] === null) {
+        $regulation = $data['regulation'];
+
+        if ($regulation === null) {
             $renderer->doc .= hsc($data['match']);
             return true;
         }
 
+        if ($regulation === '__current__') {
+            $regulation = $this->resolveCurrentRegulation();
+            if ($regulation === null) {
+                $renderer->doc .= hsc($data['match']);
+                return true;
+            }
+        }
+
         if (isset($data['article_to'])) {
-            $renderer->internallink('art._' . $data['article'] . '_' . $data['regulation'], $data['prefix'] . $data['article']);
+            $renderer->internallink('art._' . $data['article'] . '_' . $regulation, $data['prefix'] . $data['article']);
             $renderer->doc .= ' bis ';
-            $renderer->internallink('art._' . $data['article_to'] . '_' . $data['regulation'], $data['article_to'] . ' ' . $data['reg_text']);
+            $renderer->internallink('art._' . $data['article_to'] . '_' . $regulation, $data['article_to'] . ' ' . $data['reg_text']);
             return true;
         }
 
@@ -258,7 +327,7 @@ class syntax_plugin_normi extends SyntaxPlugin
                 if ($i > 0) {
                     $renderer->doc .= hsc($data['connectors'][$i - 1]);
                 }
-                $pageId = 'art._' . strtolower($article) . '_' . $data['regulation'];
+                $pageId = 'art._' . strtolower($article) . '_' . $regulation;
                 if ($i === 0) {
                     $linkText = $data['prefix'] . $article;
                 } elseif ($i === $count - 1) {
@@ -272,9 +341,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
 
         if ($data['article'] === null) {
-            $pageId = self::START_PAGES[$data['regulation']];
+            $pageId = self::START_PAGES[$regulation];
         } else {
-            $pageId = 'art._' . $data['article'] . '_' . $data['regulation'];
+            $pageId = 'art._' . $data['article'] . '_' . $regulation;
         }
 
         $renderer->internallink($pageId, $data['match']);

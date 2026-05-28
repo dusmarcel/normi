@@ -63,6 +63,24 @@ Nach der Artikelnummer können optional Untereinheiten in folgender Reihenfolge 
 
 Alle Synonyme und EU-Nummern eines Rechtsakts verlinken auf dieselbe Zielseite.
 
+### Nationale Gesetze (Deutschland)
+
+Bei nationalen Gesetzen können Paragraphen mit `§` (Singular) oder `§§` (Plural) zitiert werden, alternativ zu `Art.`/`Artikel`.
+
+| Gesetz | Abkürzung |
+|---|---|
+| Aufenthaltsgesetz | AufenthG |
+| Asylgesetz | AsylG |
+
+**Beispiele:**
+
+| Wikitext | Ergebnis |
+|---|---|
+| `§ 25 AufenthG` | Ein Link auf § 25 |
+| `§ 25 Abs. 1 AufenthG` | Ein Link auf § 25 |
+| `§§ 25, 26 AufenthG` | Zwei Links |
+| `§§ 25 bis 27 AufenthG` | Zwei Links (§ 25 und § 27), „bis" als Klartext |
+
 ### Versionsdifferenzierung bei Eurodac und Aufnahmerichtlinie
 
 Da jeweils zwei Fassungen existieren (2013 und 2024), wird die Version über die Jahreszahl im Synonym oder über die vollständige EU-Nummer disambiguiert:
