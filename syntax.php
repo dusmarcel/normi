@@ -153,7 +153,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+\/EU)';
 
-        $subParts = '(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?)?';
+        $subParts = '(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+(?:(?:,| und) [0-9]+)*)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?)?';
 
         $nationalSynonyms = [];
         foreach (['aufenthaltsgesetz', 'asylgesetz'] as $slug) {
@@ -165,13 +165,13 @@ class syntax_plugin_normi extends SyntaxPlugin
         $artPfx  = '(?:der |des |dem |die |den )?';
 
         $this->Lexer->addSpecialPattern(
-            '§§? [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
+            '§(?:§)? [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '§§? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
+            '§(?:§)? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -189,6 +189,18 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
+            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+',
+            $mode,
+            'plugin_normi'
+        );
+
+        $this->Lexer->addSpecialPattern(
+            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?' . $subParts,
+            $mode,
+            'plugin_normi'
+        );
+
+        $this->Lexer->addSpecialPattern(
             '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
@@ -198,7 +210,7 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** @inheritDoc */
     public function handle($match, $state, $pos, Doku_Handler $handler)
     {
-        if (preg_match('/^((?:Art\.|Artikel|des Artikels|§§?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+) (.+)$/', $match, $m)) {
+        if (preg_match('/^((?:Art\.|Artikel|des Artikels|§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+) (.+)$/', $match, $m)) {
             preg_match_all('/((?:,| und) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
             $connectors = [];
@@ -217,7 +229,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^((?:Art\.|Artikel|des Artikels|§§?) )([0-9]+[a-z]?) bis ([0-9]+[a-z]?) (.+)$/', $match, $m)) {
+        if (preg_match('/^((?:Art\.|Artikel|des Artikels|§(?:§)?) )([0-9]+[a-z]?) bis ([0-9]+[a-z]?) (.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'prefix'     => $m[1],
@@ -228,11 +240,38 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel|des Artikels|§§?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.) [0-9]+)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\))?)?)? (?:der |des |dem |die |den )?(.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels|§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+(?:(?:,| und) [0-9]+)*)?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\))?)?)? (?:der |des |dem |die |den )?(.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
                 'regulation' => $this->resolveRegulation($m[2]),
+            ];
+        }
+
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+)$/', $match, $m)) {
+            preg_match_all('/((?:,| und) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
+            $articles = [$m[2]];
+            $connectors = [];
+            foreach ($parts as $part) {
+                $connectors[] = $part[1];
+                $articles[] = $part[2];
+            }
+            return [
+                'match'      => $match,
+                'articles'   => $articles,
+                'connectors' => $connectors,
+                'prefix'     => $m[1],
+                'reg_text'   => null,
+                'article'    => null,
+                'regulation' => '__current__',
+            ];
+        }
+
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels) ([0-9]+[a-z]?)/', $match, $m)) {
+            return [
+                'match'      => $match,
+                'article'    => strtolower($m[1]),
+                'regulation' => '__current__',
             ];
         }
 
@@ -331,7 +370,7 @@ class syntax_plugin_normi extends SyntaxPlugin
                 if ($i === 0) {
                     $linkText = $data['prefix'] . $article;
                 } elseif ($i === $count - 1) {
-                    $linkText = $article . ' ' . $data['reg_text'];
+                    $linkText = $data['reg_text'] !== null ? $article . ' ' . $data['reg_text'] : $article;
                 } else {
                     $linkText = $article;
                 }
