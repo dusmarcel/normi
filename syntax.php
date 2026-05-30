@@ -72,10 +72,10 @@ class syntax_plugin_normi extends SyntaxPlugin
             'EASO-Verordnung', 'EASO-VO',
         ],
         'aufenthaltsgesetz' => [
-            'Aufenthaltsgesetz', 'AufenthG',
+            'Aufenthaltsgesetzes', 'Aufenthaltsgesetz', 'AufenthG',
         ],
         'asylgesetz' => [
-            'Asylgesetz', 'AsylG',
+            'Asylgesetzes', 'Asylgesetz', 'AsylG',
         ],
         '__current__' => [
             'vorliegenden Verordnung', 'vorliegenden Richtlinie', 'vorliegenden Gesetzes',
