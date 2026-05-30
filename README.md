@@ -44,6 +44,12 @@ Wird kein Rechtsaktname genannt, versucht das Plugin, die gemeinte Norm aus der 
 
 Enthält die Seitenüberschrift keinen bekannten Rechtsaktnamen, bleibt der Ausdruck unverlinkt.
 
+**Einschränkungen:**
+
+Auf Seiten zu nationalen Gesetzen (AufenthG, AsylG) werden bare `Artikel`/`Art.`-Verweise **nicht** automatisch verlinkt, weil nationale Gesetze `§` verwenden und ein `Artikel`-Verweis dort regelmäßig eine andere (nicht im Wiki geführte) Rechtsquelle meint. Bare `§`-Verweise auf denselben Seiten werden dagegen weiterhin korrekt verlinkt.
+
+EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Richtlinie 2009/52/EG`) werden als solche erkannt und — sofern nicht im Wiki geführt — unverlinkt ausgegeben.
+
 ### Beispiele
 
 | Wikitext | Ergebnis |
