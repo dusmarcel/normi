@@ -217,6 +217,12 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
+            '(?:Absatz|Abs\.) ' . $absatzNums,
+            $mode,
+            'plugin_normi'
+        );
+
+        $this->Lexer->addSpecialPattern(
             '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
@@ -291,6 +297,14 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
+        if (preg_match('/^(?:Absatz|Abs\.) [0-9]+/', $match)) {
+            return [
+                'match'      => $match,
+                'article'    => '__current__',
+                'regulation' => '__current__',
+            ];
+        }
+
         return [
             'match'      => $match,
             'article'    => null,
@@ -327,6 +341,9 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** false = not yet resolved, null = not found, string = slug */
     private $resolvedCurrentRegulation = false;
 
+    /** false = not yet resolved, null = not found, string = article number */
+    private $resolvedCurrentArticle = false;
+
     private function resolveCurrentRegulation(): ?string
     {
         if ($this->resolvedCurrentRegulation !== false) {
@@ -348,6 +365,19 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
         $this->resolvedCurrentRegulation = $bestSlug;
         return $bestSlug;
+    }
+
+    private function resolveCurrentArticle(): ?string
+    {
+        if ($this->resolvedCurrentArticle !== false) {
+            return $this->resolvedCurrentArticle;
+        }
+        global $ID;
+        $title = $ID ? (p_get_metadata($ID, 'title') ?? '') : '';
+        // Extract § number from page title, e.g. "§ 62 AufenthG"
+        $this->resolvedCurrentArticle = preg_match('/\xc2\xa7\s*([0-9]+[a-z]?)/', $title, $m)
+            ? strtolower($m[1]) : null;
+        return $this->resolvedCurrentArticle;
     }
 
     /** @inheritDoc */
@@ -373,7 +403,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             }
             // National laws use § not Artikel — bare Artikel refs on these pages are foreign regulations
             if (in_array($regulation, self::NATIONAL_LAW_SLUGS, true)
-                && !preg_match('/^(?:des )?§/', $data['match'])) {
+                && preg_match('/^(?:Art\.|Artikel|Artikeln|des Artikels)/', $data['match'])) {
                 $renderer->doc .= hsc($data['match']);
                 return true;
             }
@@ -405,10 +435,19 @@ class syntax_plugin_normi extends SyntaxPlugin
             return true;
         }
 
-        if ($data['article'] === null) {
+        $article = $data['article'];
+        if ($article === '__current__') {
+            $article = $this->resolveCurrentArticle();
+            if ($article === null) {
+                $renderer->doc .= hsc($data['match']);
+                return true;
+            }
+        }
+
+        if ($article === null) {
             $pageId = self::START_PAGES[$regulation];
         } else {
-            $pageId = 'art._' . $data['article'] . '_' . $regulation;
+            $pageId = 'art._' . $article . '_' . $regulation;
         }
 
         $renderer->internallink($pageId, $data['match']);
