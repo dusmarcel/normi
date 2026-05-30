@@ -363,6 +363,16 @@ class syntax_plugin_normi extends SyntaxPlugin
                 }
             }
         }
+        // Fallback: look for slug in page ID (e.g. "art._60a_aufenthaltsgesetz")
+        if ($bestSlug === null && $ID) {
+            foreach (self::REGULATIONS as $slug => $synonyms) {
+                if ($slug === '__current__') continue;
+                if (preg_match('/(?:^|[_:])' . preg_quote($slug, '/') . '(?:$|[_:])/', $ID)) {
+                    $bestSlug = $slug;
+                    break;
+                }
+            }
+        }
         $this->resolvedCurrentRegulation = $bestSlug;
         return $bestSlug;
     }
@@ -375,9 +385,17 @@ class syntax_plugin_normi extends SyntaxPlugin
         global $ID;
         $title = $ID ? (p_get_metadata($ID, 'title') ?? '') : '';
         // Extract § number from page title, e.g. "§ 62 AufenthG"
-        $this->resolvedCurrentArticle = preg_match('/\xc2\xa7\s*([0-9]+[a-z]?)/', $title, $m)
-            ? strtolower($m[1]) : null;
-        return $this->resolvedCurrentArticle;
+        if (preg_match('/\xc2\xa7\s*([0-9]+[a-z]?)/', $title, $m)) {
+            $this->resolvedCurrentArticle = strtolower($m[1]);
+            return $this->resolvedCurrentArticle;
+        }
+        // Fallback: extract article number from page ID (e.g. "art._60a_aufenthaltsgesetz")
+        if ($ID && preg_match('/^art\._([0-9]+[a-z]?)_/', $ID, $m)) {
+            $this->resolvedCurrentArticle = strtolower($m[1]);
+            return $this->resolvedCurrentArticle;
+        }
+        $this->resolvedCurrentArticle = null;
+        return null;
     }
 
     /** @inheritDoc */
