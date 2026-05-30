@@ -207,7 +207,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '§(?:§)? [0-9]+[a-z]?' . $subParts,
+            '§(?:§)? [0-9]+[a-z]?(?!(?:,| und) [0-9])' . $subParts,
             $mode,
             'plugin_normi'
         );
