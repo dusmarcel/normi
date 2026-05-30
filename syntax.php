@@ -201,6 +201,18 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
+            '§(?:§)? [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+',
+            $mode,
+            'plugin_normi'
+        );
+
+        $this->Lexer->addSpecialPattern(
+            '§(?:§)? [0-9]+[a-z]?' . $subParts,
+            $mode,
+            'plugin_normi'
+        );
+
+        $this->Lexer->addSpecialPattern(
             '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
@@ -248,7 +260,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+)$/', $match, $m)) {
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+)$/', $match, $m)) {
             preg_match_all('/((?:,| und) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
             $connectors = [];
@@ -267,7 +279,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel|des Artikels) ([0-9]+[a-z]?)/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels|§(?:§)?) ([0-9]+[a-z]?)/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
