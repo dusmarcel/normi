@@ -12,7 +12,7 @@ Sobald das Plugin aktiv ist, werden Verweise auf Artikel von bekannten Rechtsakt
 
 ### Präfixe
 
-Artikel können mit folgenden Präfixen geschrieben werden: `Art.`, `Artikel`, `des Artikels` (Genitiv Singular), `Artikeln` (Dativ Plural bei Aufzählungen). Paragraphen nationaler Gesetze verwenden `§` oder `§§`.
+Artikel können mit folgenden Präfixen geschrieben werden: `Art.`, `Artikel`, `des Artikels` (Genitiv Singular), `Artikeln` (Dativ Plural bei Aufzählungen). Paragraphen nationaler Gesetze verwenden `§` oder `§§`; auch die Genitivform `des §` wird erkannt.
 
 ### Untereinheiten
 
@@ -20,7 +20,7 @@ Nach der Artikelnummer können optional Untereinheiten in folgender Reihenfolge 
 
 | Einheit | Schreibweisen |
 |---|---|
-| Absatz | `Absatz`, `Abs.`, `Absätze` (Plural, auch mit Nummernliste) |
+| Absatz | `Absatz`, `Abs.`, `Absätze` (Plural); Nummern durch `,`, `und`, `oder` getrennt oder als Bereich mit `bis` (z. B. `Absatz 1 bis 3, 5 und 7 bis 9` oder `Absatz 2 oder 3`) |
 | Unterabsatz | `Unterabsatz`, `UA` |
 | Satz | `Satz`, `S.` |
 | Nummer | `Nummer`, `Nr.` |
@@ -36,13 +36,14 @@ Alle Untereinheiten sind optional und beeinflussen nur den Linktext, nicht das L
 
 ### Kontextbasierte Verlinkung
 
-Wird kein Rechtsaktname genannt, versucht das Plugin, die gemeinte Norm aus der **Überschrift der aktuellen Wiki-Seite** zu ermitteln. Das gilt für:
+Wird kein Rechtsaktname genannt, versucht das Plugin, die gemeinte Norm aus dem Kontext der aktuellen Wiki-Seite zu ermitteln — zuerst aus der **Seitenüberschrift**, dann als Fallback aus der **Page-ID** (z. B. enthält `art._60a_aufenthaltsgesetz` den Slug `aufenthaltsgesetz`). Das gilt für:
 
 - **Selbstverweise** wie `der vorliegenden Verordnung`, `der vorliegenden Richtlinie`, `des vorliegenden Gesetzes`
 - **Bare Artikelverweise** ohne Rechtsaktangabe, z. B. `Artikel 42 Absätze 1 und 3` oder `Artikeln 14 und 15`
 - **Bare Paragraphenverweise** ohne Gesetzesangabe, z. B. `§ 25 Abs. 3` oder `§§ 16b, 16c und 17`
+- **Standalone-Absatzverweise** wie `Absatz 1` oder `Absatz 2 oder 3` (ohne §-Nummer): Das Plugin ermittelt die §-Nummer ebenfalls aus dem Seitentitel oder der Page-ID (Muster `art._[Nummer]_[Slug]`) und verlinkt auf den entsprechenden Artikel.
 
-Enthält die Seitenüberschrift keinen bekannten Rechtsaktnamen, bleibt der Ausdruck unverlinkt.
+Lässt sich weder aus der Überschrift noch aus der Page-ID eine bekannte Norm ableiten, bleibt der Ausdruck unverlinkt.
 
 **Einschränkungen:**
 
@@ -68,6 +69,7 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | `Art. 7 bis 9 Krisenverordnung` | Zwei Links (Art. 7 und Art. 9), „bis" als Klartext |
 | `Artikel 42 Absätze 1 und 3` | Ein Link (Norm aus Seitentitel) |
 | `Artikeln 14 und 15` | Zwei Links (Norm aus Seitentitel) |
+| `Absatz 1` | Ein Link (Norm + §-Nummer aus Seitentitel/Page-ID) |
 
 ## Unterstützte Rechtsakte
 
@@ -117,8 +119,13 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 | `§ 25 Abs. 1 AufenthG` | Ein Link auf § 25 |
 | `§§ 25, 26 AufenthG` | Zwei Links |
 | `§§ 25 bis 27 AufenthG` | Zwei Links (§ 25 und § 27), „bis" als Klartext |
+| `des § 3 Abs. 1 AufenthG` | Ein Link auf § 3 (Genitiv-Präfix) |
+| `§ 26 Absatz 2 oder 3 des Asylgesetzes` | Ein Link auf § 26 |
+| `§ 60 Abs. 1 bis 3, 5 und 7 bis 9 AufenthG` | Ein Link auf § 60 |
 | `§ 25 Abs. 3` | Ein Link (Norm aus Seitentitel) |
 | `§§ 16b, 16c, 16e und 17` | Vier Links (Norm aus Seitentitel) |
+| `des § 3 Abs. 1` | Ein Link (Norm aus Seitentitel) |
+| `Absatz 3` | Ein Link (§-Nummer + Norm aus Page-ID) |
 
 ### Versionsdifferenzierung bei Eurodac und Aufnahmerichtlinie
 

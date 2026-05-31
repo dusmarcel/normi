@@ -156,7 +156,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU, old EG directive YYYY/NN/EG
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+\/(?:EU|EG))';
 
-        $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
+        $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
         $subParts = '(?:(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?)?';
 
         $nationalSynonyms = [];
@@ -262,7 +262,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)?(?:(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\))?)?))? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Satz|S\.|Nummer|Nr\.|Buchstabe|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)?(?:(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\))?)?))? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Satz|S\.|Nummer|Nr\.|Buchstabe|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
