@@ -195,7 +195,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -246,7 +246,7 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** @inheritDoc */
     public function handle($match, $state, $pos, Doku_Handler $handler)
     {
-        if (preg_match('/^((?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+) (?!und [0-9])(.+)$/', $match, $m)) {
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+) (?!und [0-9])(.+)$/', $match, $m)) {
             preg_match_all('/((?:,| und) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
             $connectors = [];
