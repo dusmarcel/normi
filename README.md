@@ -99,6 +99,7 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | Dublin-III-Verordnung (EU) Nr. 604/2013 | Dublin-III-VO, DublinVO, Dublin III, Dublin-III, Dublin III-Verordnung, Dublin III-VO |
 | Eurodac-Verordnung (EU) Nr. 603/2013 | Eurodac-Verordnung 2013, Eurodac-VO 2013 |
 | EASO-Verordnung (EU) Nr. 439/2010 | EASO-VO |
+| Rückführungsrichtlinie 2008/115/EG | RückführungsRL |
 
 Alle Synonyme und EU-Nummern eines Rechtsakts verlinken auf dieselbe Zielseite.
 
@@ -110,6 +111,8 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 |---|---|
 | Aufenthaltsgesetz | AufenthG |
 | Asylgesetz | AsylG |
+| Beschäftigungsverordnung | BeschV |
+| Aufenthaltsverordnung | AufenthV |
 
 **Beispiele:**
 

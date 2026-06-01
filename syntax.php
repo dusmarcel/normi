@@ -11,7 +11,7 @@ use dokuwiki\Extension\SyntaxPlugin;
 class syntax_plugin_normi extends SyntaxPlugin
 {
     // Slugs of national laws (use § not Artikel — bare Artikel refs on these pages are suppressed)
-    const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz'];
+    const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz', 'beschäftigungsverordnung', 'aufenthaltsverordnung'];
 
     // Canonical page slug => list of text synonyms
     const REGULATIONS = [
@@ -74,11 +74,20 @@ class syntax_plugin_normi extends SyntaxPlugin
         'easo-verordnung' => [
             'EASO-Verordnung', 'EASO-VO',
         ],
+        'rückführungsrichtlinie' => [
+            'Rückführungsrichtlinie', 'RückführungsRL',
+        ],
         'aufenthaltsgesetz' => [
             'Aufenthaltsgesetzes', 'Aufenthaltsgesetz', 'AufenthG',
         ],
         'asylgesetz' => [
             'Asylgesetzes', 'Asylgesetz', 'AsylG',
+        ],
+        'beschäftigungsverordnung' => [
+            'Beschäftigungsverordnung', 'BeschV',
+        ],
+        'aufenthaltsverordnung' => [
+            'Aufenthaltsverordnung', 'AufenthV',
         ],
         '__current__' => [
             'vorliegenden Verordnung', 'vorliegenden Richtlinie', 'vorliegenden Gesetzes',
@@ -105,8 +114,11 @@ class syntax_plugin_normi extends SyntaxPlugin
         'dublin-iii-verordnung'           => 'verordnung_eu_nr._604_2013',
         'eurodac-verordnung-2013'         => 'verordnung_eu_nr._603_2013',
         'easo-verordnung'                 => 'verordnung_eu_nr._439_2010',
+        'rückführungsrichtlinie'          => 'richtlinie_2008_115_eg',
         'aufenthaltsgesetz'               => 'aufenthaltsgesetz',
         'asylgesetz'                      => 'asylgesetz',
+        'beschäftigungsverordnung'        => 'beschäftigungsverordnung',
+        'aufenthaltsverordnung'           => 'aufenthaltsverordnung',
     ];
 
     // EU regulation/directive number => canonical page slug
@@ -130,6 +142,8 @@ class syntax_plugin_normi extends SyntaxPlugin
         '2013/33'   => 'aufnahmerichtlinie-2013',
         '2011/95'   => 'qualifikationsrichtlinie',
         '2013/32'   => 'asylverfahrensrichtlinie',
+        // Old EG directive format: YYYY/NN/EG
+        '2008/115'  => 'rückführungsrichtlinie',
     ];
 
     /** @inheritDoc */
@@ -160,7 +174,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         $subParts = '(?:(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?)?';
 
         $nationalSynonyms = [];
-        foreach (['aufenthaltsgesetz', 'asylgesetz'] as $slug) {
+        foreach (self::NATIONAL_LAW_SLUGS as $slug) {
             $nationalSynonyms = array_merge($nationalSynonyms, self::REGULATIONS[$slug]);
         }
         usort($nationalSynonyms, fn($a, $b) => strlen($b) - strlen($a));
@@ -326,9 +340,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         if (preg_match('/^Richtlinie ([0-9]{4}\/[0-9]+)\/EU$/', $term, $eu)) {
             return self::EU_NUMBERS[$eu[1]] ?? null;
         }
-        // Old EG directive format: YYYY/NN/EG (not in our system → always null)
-        if (preg_match('/^Richtlinie [0-9]{4}\/[0-9]+\/EG$/', $term)) {
-            return null;
+        // Old EG directive format: YYYY/NN/EG
+        if (preg_match('/^Richtlinie ([0-9]{4}\/[0-9]+)\/EG$/', $term, $eu)) {
+            return self::EU_NUMBERS[$eu[1]] ?? null;
         }
         foreach (self::REGULATIONS as $slug => $synonyms) {
             if (in_array($term, $synonyms, true)) {
