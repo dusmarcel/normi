@@ -278,7 +278,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie"
         if (!empty($this->lexerSynonymPattern)) {
             $regPfxPat = '(?:der |des |dem |die |den )?';
-            if (preg_match('/ ' . $regPfxPat . '(' . $this->lexerSynonymPattern . '|' . $this->lexerEuPattern . ')$/', $match, $rm)) {
+            if (preg_match('~ ' . $regPfxPat . '(' . $this->lexerSynonymPattern . '|' . $this->lexerEuPattern . ')$~', $match, $rm)) {
                 $regSlug = $this->resolveRegulation($rm[1]);
                 if ($regSlug !== null) {
                     $regSuffix = $rm[0];
