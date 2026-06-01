@@ -11,7 +11,11 @@ use dokuwiki\Extension\SyntaxPlugin;
 class syntax_plugin_normi extends SyntaxPlugin
 {
     // Slugs of national laws (use § not Artikel — bare Artikel refs on these pages are suppressed)
-    const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz', 'beschäftigungsverordnung', 'aufenthaltsverordnung'];
+    const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz', 'beschäftigungsverordnung', 'aufenthaltsverordnung', 'staatsangehörigkeitsgesetz', 'verwaltungsgerichtsordnung', 'freizügigkeitsgesetz-eu'];
+
+    /** Cached synonym/EU patterns for use in handle() (set in connectTo) */
+    private $lexerSynonymPattern = '';
+    private $lexerEuPattern = '';
 
     // Canonical page slug => list of text synonyms
     const REGULATIONS = [
@@ -89,6 +93,15 @@ class syntax_plugin_normi extends SyntaxPlugin
         'aufenthaltsverordnung' => [
             'Aufenthaltsverordnung', 'AufenthV',
         ],
+        'staatsangehörigkeitsgesetz' => [
+            'Staatsangehörigkeitsgesetzes', 'Staatsangehörigkeitsgesetz', 'StAG',
+        ],
+        'verwaltungsgerichtsordnung' => [
+            'Verwaltungsgerichtsordnung', 'VwGO',
+        ],
+        'freizügigkeitsgesetz-eu' => [
+            'Freizügigkeitsgesetz/EU', 'FreizügG/EU',
+        ],
         '__current__' => [
             'vorliegenden Verordnung', 'vorliegenden Richtlinie', 'vorliegenden Gesetzes',
             'vorliegende Verordnung', 'vorliegende Richtlinie',
@@ -119,6 +132,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         'asylgesetz'                      => 'asylgesetz',
         'beschäftigungsverordnung'        => 'beschäftigungsverordnung',
         'aufenthaltsverordnung'           => 'aufenthaltsverordnung',
+        'staatsangehörigkeitsgesetz'      => 'staatsangehörigkeitsgesetz',
+        'verwaltungsgerichtsordnung'      => 'verwaltungsgerichtsordnung',
+        'freizügigkeitsgesetz-eu'         => 'freizügigkeitsgesetz-eu',
     ];
 
     // EU regulation/directive number => canonical page slug
@@ -182,6 +198,18 @@ class syntax_plugin_normi extends SyntaxPlugin
         $nationalPattern = implode('|', array_map('preg_quote', $nationalSynonyms));
 
         $artPfx  = '(?:der |des |dem |die |den )?';
+
+        $this->lexerSynonymPattern = $synonymPattern;
+        $this->lexerEuPattern      = $euPattern;
+
+        // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie 2008/115/EG"
+        $singleItemPat = '(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?' . $subPartsInner . ')?';
+        $compoundSep   = '(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))';
+        $this->Lexer->addSpecialPattern(
+            '(?:' . $singleItemPat . $compoundSep . ')++' . $singleItemPat . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            $mode,
+            'plugin_normi'
+        );
 
         $this->Lexer->addSpecialPattern(
             '(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
@@ -247,6 +275,35 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** @inheritDoc */
     public function handle($match, $state, $pos, Doku_Handler $handler)
     {
+        // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie"
+        if (!empty($this->lexerSynonymPattern)) {
+            $regPfxPat = '(?:der |des |dem |die |den )?';
+            if (preg_match('/ ' . $regPfxPat . '(' . $this->lexerSynonymPattern . '|' . $this->lexerEuPattern . ')$/', $match, $rm)) {
+                $regSlug = $this->resolveRegulation($rm[1]);
+                if ($regSlug !== null) {
+                    $regSuffix = $rm[0];
+                    $itemsText = substr($match, 0, -strlen($regSuffix));
+                    $sepPat = '/(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))/';
+                    $items = preg_split($sepPat, $itemsText);
+                    if (count($items) >= 2) {
+                        preg_match_all($sepPat, $itemsText, $connMatches);
+                        $parsedItems = [];
+                        foreach ($items as $idx => $itemText) {
+                            $displayText = ($idx === count($items) - 1) ? $itemText . $regSuffix : $itemText;
+                            if (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?) bis ([0-9]+[a-z]?)/', $itemText, $bm)) {
+                                $parsedItems[] = ['text' => $displayText, 'article' => strtolower($bm[1]), 'article_to' => strtolower($bm[2])];
+                            } elseif (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
+                            }
+                        }
+                        if (count($parsedItems) >= 2) {
+                            return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connMatches[0], 'regulation' => $regSlug];
+                        }
+                    }
+                }
+            }
+        }
+
         if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+) (?!und [0-9])(.+)$/', $match, $m)) {
             preg_match_all('/((?:,| und) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
@@ -440,6 +497,23 @@ class syntax_plugin_normi extends SyntaxPlugin
                 $renderer->doc .= hsc($data['match']);
                 return true;
             }
+        }
+
+        if (isset($data['compound'])) {
+            foreach ($data['compound'] as $i => $item) {
+                if ($i > 0) {
+                    $renderer->doc .= hsc($data['connectors'][$i - 1]);
+                }
+                if ($item['article_to'] !== null
+                    && preg_match('/^((?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm)) {
+                    $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $bm[1]);
+                    $renderer->doc .= ' bis ';
+                    $renderer->internallink('art._' . $item['article_to'] . '_' . $regulation, $bm[2]);
+                } else {
+                    $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $item['text']);
+                }
+            }
+            return true;
         }
 
         if (isset($data['article_to'])) {

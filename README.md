@@ -113,6 +113,9 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 | Asylgesetz | AsylG |
 | Beschäftigungsverordnung | BeschV |
 | Aufenthaltsverordnung | AufenthV |
+| Staatsangehörigkeitsgesetz | StAG |
+| Verwaltungsgerichtsordnung | VwGO |
+| Freizügigkeitsgesetz/EU | FreizügG/EU |
 
 **Beispiele:**
 
