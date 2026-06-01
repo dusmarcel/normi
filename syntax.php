@@ -171,7 +171,8 @@ class syntax_plugin_normi extends SyntaxPlugin
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+\/(?:EU|EG))';
 
         $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
-        $subParts = '(?:(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?)?';
+        $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?';
+        $subParts = '(?:' . $subPartsInner . ')?';
 
         $nationalSynonyms = [];
         foreach (self::NATIONAL_LAW_SLUGS as $slug) {
@@ -213,7 +214,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?' . $subParts,
+            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?(?:' . $subPartsInner . ')?+(?!,)',
             $mode,
             'plugin_normi'
         );
