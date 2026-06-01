@@ -214,7 +214,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?(?:' . $subPartsInner . ')?+(?!,)',
+            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?(?:' . $subPartsInner . ')?+(?!,)(?! bis [0-9])(?! und (?:die |den )?(?:Art\.|Artikel|Artikeln))',
             $mode,
             'plugin_normi'
         );
@@ -232,7 +232,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Absatz|Abs\.) ' . $absatzNums,
+            '(?<![0-9] )(?<![0-9][a-z] )(?:Absatz|Abs\.) ' . $absatzNums,
             $mode,
             'plugin_normi'
         );
