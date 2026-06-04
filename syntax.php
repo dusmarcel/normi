@@ -183,11 +183,11 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
         usort($synonyms, fn($a, $b) => strlen($b) - strlen($a));
         $synonymPattern = implode('|', array_map('preg_quote', $synonyms));
-        // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU, old EG directive YYYY/NN/EG
-        $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+\/(?:EU|EG))';
+        // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU or /EG or without suffix
+        $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?)';
 
         $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
-        $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?';
+        $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\)))?';
         $subParts = '(?:' . $subPartsInner . ')?';
 
         $nationalSynonyms = [];
@@ -334,7 +334,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)?(?:(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:Buchstabe [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\))?)?))? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Satz|S\.|Nummer|Nr\.|Buchstabe|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)?(?:(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| oder) [a-z])*|lit\. [a-z]\))?)?))? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Satz|S\.|Nummer|Nr\.|Buchstabe|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
@@ -400,6 +400,10 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
         // Old EG directive format: YYYY/NN/EG
         if (preg_match('/^Richtlinie ([0-9]{4}\/[0-9]+)\/EG$/', $term, $eu)) {
+            return self::EU_NUMBERS[$eu[1]] ?? null;
+        }
+        // Directive cited without suffix: YYYY/NN
+        if (preg_match('/^Richtlinie ([0-9]{4}\/[0-9]+)$/', $term, $eu)) {
             return self::EU_NUMBERS[$eu[1]] ?? null;
         }
         foreach (self::REGULATIONS as $slug => $synonyms) {
