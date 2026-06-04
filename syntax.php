@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use dokuwiki\Extension\SyntaxPlugin;
 
@@ -187,7 +187,8 @@ class syntax_plugin_normi extends SyntaxPlugin
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?)';
 
         $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
-        $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| und| oder) [a-z])*|lit\. [a-z]\)))?';
+        $buchstaben    = '(?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| und| oder) [a-z])*|lit\. [a-z]\))';
+        $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: ' . $buchstaben . ')?(?: und (?:(?:Absatz|Abs\.) ' . $absatzNums . ')(?: ' . $buchstaben . ')?)*';
         $subParts = '(?:' . $subPartsInner . ')?';
 
         $nationalSynonyms = [];
@@ -334,7 +335,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)?(?:(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| und| oder) [a-z])*|lit\. [a-z]\))?)?))? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Satz|S\.|Nummer|Nr\.|Buchstabe|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)?(?:(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| und| oder) [a-z])*|lit\. [a-z]\))?)?))?(?: und (?:(?:Absatz|Abs\.) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)(?: (?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| und| oder) [a-z])*|lit\. [a-z]\)))?)* (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Satz|S\.|Nummer|Nr\.|Buchstabe|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
