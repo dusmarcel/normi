@@ -244,7 +244,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?(?:' . $subPartsInner . ')?+(?!,)(?! bis [0-9])(?! und (?:die |den )?(?:Art\.|Artikel|Artikeln))',
+            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?(?:' . $subPartsInner . ')?+(?!,)(?! bis [0-9])',
             $mode,
             'plugin_normi'
         );
