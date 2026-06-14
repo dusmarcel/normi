@@ -416,6 +416,49 @@ class syntax_plugin_normi extends SyntaxPlugin
         return null;
     }
 
+    /**
+     * Infers the regulation for a bare reference from the table column it
+     * appears in: if we're past the first row of a table, look up the
+     * first-row cell of the same column and try to resolve it as a regulation.
+     */
+    private function resolveTableColumnRegulation(Doku_Renderer $renderer): ?string
+    {
+        $doc = $renderer->doc;
+
+        $tablePos = strrpos($doc, '<table');
+        if ($tablePos === false || strpos($doc, '</table>', $tablePos) !== false) {
+            return null;
+        }
+
+        if (!preg_match_all('/<tr\b[^>]*>(.*?)(?:<\/tr>|$)/s', substr($doc, $tablePos), $rowMatches)) {
+            return null;
+        }
+        $rows = $rowMatches[1];
+        if (count($rows) < 2) {
+            return null;
+        }
+
+        $currentRow = $rows[count($rows) - 1];
+        preg_match_all('/<t[hd]\b[^>]*>/', $currentRow, $cellOpens);
+        $columnIndex = count($cellOpens[0]) - 1;
+        if ($columnIndex < 0) {
+            return null;
+        }
+
+        preg_match_all('/<t[hd]\b[^>]*>(.*?)<\/t[hd]>/s', $rows[0], $headerCells);
+        if (!isset($headerCells[1][$columnIndex])) {
+            return null;
+        }
+
+        $headerText = trim(html_entity_decode(strip_tags($headerCells[1][$columnIndex]), ENT_QUOTES, 'UTF-8'));
+        if ($headerText === '') {
+            return null;
+        }
+
+        $slug = $this->resolveRegulation($headerText);
+        return $slug === '__current__' ? null : $slug;
+    }
+
     /** false = not yet resolved, null = not found, string = slug */
     private $resolvedCurrentRegulation = false;
 
@@ -492,16 +535,23 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
 
         if ($regulation === '__current__') {
-            $regulation = $this->resolveCurrentRegulation();
-            if ($regulation === null) {
-                $renderer->doc .= hsc($data['match']);
-                return true;
-            }
-            // National laws use § not Artikel — bare Artikel refs on these pages are foreign regulations
-            if (in_array($regulation, self::NATIONAL_LAW_SLUGS, true)
-                && preg_match('/^(?:Art\.|Artikel|Artikeln|des Artikels)/', $data['match'])) {
-                $renderer->doc .= hsc($data['match']);
-                return true;
+            // In a table, an unspecified regulation may be implied by the first-row
+            // header of the same column (e.g. "^ Richtlinie 2013/33/EU ^ ... ^").
+            $tableRegulation = $this->resolveTableColumnRegulation($renderer);
+            if ($tableRegulation !== null) {
+                $regulation = $tableRegulation;
+            } else {
+                $regulation = $this->resolveCurrentRegulation();
+                if ($regulation === null) {
+                    $renderer->doc .= hsc($data['match']);
+                    return true;
+                }
+                // National laws use § not Artikel — bare Artikel refs on these pages are foreign regulations
+                if (in_array($regulation, self::NATIONAL_LAW_SLUGS, true)
+                    && preg_match('/^(?:Art\.|Artikel|Artikeln|des Artikels)/', $data['match'])) {
+                    $renderer->doc .= hsc($data['match']);
+                    return true;
+                }
             }
         }
 
