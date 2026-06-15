@@ -189,7 +189,13 @@ class syntax_plugin_normi extends SyntaxPlugin
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?|\(EU\) (?:Nr\. )?[0-9]+\/[0-9]+)';
 
         $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
-        $buchstaben    = '(?:(?:Buchstabe|Buchstaben|Buchst\.) [a-z](?:(?:,| und| oder)? [a-z])*|lit\. [a-z]\))';
+        // Optional "erste/zweite Alternative" or "Variante" qualifier after a Buchstabe letter
+        $buchstabeQualifier = '(?: (?:erste|zweite|dritte|vierte|fünfte|sechste|siebte|achte|neunte|zehnte) (?:Alternative|Variante))?';
+        // (?![a-zäöüß]) ensures the letter is a standalone token, not the start of a following word (e.g. "der")
+        $buchstabeLetter = '[a-z](?![a-zäöüß])' . $buchstabeQualifier;
+        $buchstaben = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
+            . '(?:(?:,| und| oder)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
+            . '|lit\. [a-z]\))';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstaben . ')?';
         $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
