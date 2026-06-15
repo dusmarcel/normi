@@ -16,6 +16,7 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** Cached synonym/EU patterns for use in handle() (set in connectTo) */
     private $lexerSynonymPattern = '';
     private $lexerEuPattern = '';
+    private $lexerSubPartsPattern = '';
 
     // Canonical page slug => list of text synonyms
     const REGULATIONS = [
@@ -187,9 +188,14 @@ class syntax_plugin_normi extends SyntaxPlugin
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?)';
 
         $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
-        $buchstaben    = '(?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| und| oder) [a-z])*|lit\. [a-z]\))';
-        $extSubParts   = '(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: ' . $buchstaben . ')?';
-        $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . ')?(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: ' . $buchstaben . ')?(?: und (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
+        $buchstaben    = '(?:(?:Buchstabe|Buchstaben|Buchst\.) [a-z](?:(?:,| und| oder)? [a-z])*|lit\. [a-z]\))';
+        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstaben . ')?';
+        $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
+            . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
+            . '(?: (?:Satz|S\.) [0-9]+)?'
+            . '(?: (?:Nummer|Nr\.) [0-9]+)?'
+            . '(?:,? ' . $buchstaben . ')?'
+            . '(?: und (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
         $subParts = '(?:' . $subPartsInner . ')?';
 
         $nationalSynonyms = [];
@@ -201,8 +207,9 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         $artPfx  = '(?:der |des |dem |die |den )?';
 
-        $this->lexerSynonymPattern = $synonymPattern;
-        $this->lexerEuPattern      = $euPattern;
+        $this->lexerSynonymPattern  = $synonymPattern;
+        $this->lexerEuPattern       = $euPattern;
+        $this->lexerSubPartsPattern = $subPartsInner;
 
         // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie 2008/115/EG"
         $singleItemPat = '(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?' . $subPartsInner . ')?';
@@ -336,7 +343,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:(?: (?:Absatz|Abs\.|Absätze) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)?(?:(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| und| oder) [a-z])*|lit\. [a-z]\))?)?))?(?: und (?:(?:Absatz|Abs\.) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?)(?: (?:Unterabsatz|UA) [0-9]+)?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?: (?:(?:Buchstabe|Buchst\.) [a-z](?:(?:,| und| oder) [a-z])*|lit\. [a-z]\)))?)* (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Satz|S\.|Nummer|Nr\.|Buchstabe|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:' . $this->lexerSubPartsPattern . ')? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Unterabsätze|Satz|S\.|Nummer|Nr\.|Buchstabe|Buchstaben|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
