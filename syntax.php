@@ -228,7 +228,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
+            '(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -240,7 +240,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -252,7 +252,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+',
+            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+',
             $mode,
             'plugin_normi'
         );
@@ -264,13 +264,13 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und) [0-9]+[a-z]?)+',
+            '(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+',
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und) [0-9])' . $subParts,
+            '(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder) [0-9])' . $subParts,
             $mode,
             'plugin_normi'
         );
@@ -320,8 +320,8 @@ class syntax_plugin_normi extends SyntaxPlugin
             }
         }
 
-        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+) (?!und [0-9])(.+)$/', $match, $m)) {
-            preg_match_all('/((?:,| und) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und| oder) [0-9]+[a-z]?)+) (?!(?:und|oder) [0-9])(.+)$/', $match, $m)) {
+            preg_match_all('/((?:,| und| oder) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
             $connectors = [];
             foreach ($parts as $part) {
@@ -358,8 +358,8 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und) [0-9]+[a-z]?)+)$/', $match, $m)) {
-            preg_match_all('/((?:,| und) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und| oder) [0-9]+[a-z]?)+)$/', $match, $m)) {
+            preg_match_all('/((?:,| und| oder) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
             $connectors = [];
             foreach ($parts as $part) {
