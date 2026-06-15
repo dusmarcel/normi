@@ -184,8 +184,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
         usort($synonyms, fn($a, $b) => strlen($b) - strlen($a));
         $synonymPattern = implode('|', array_map('preg_quote', $synonyms));
-        // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU or /EG or without suffix
-        $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?)';
+        // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU or /EG or without suffix,
+        // and bare (EU) YYYY/NNNN or (EU) Nr. NNNN/YYYY (e.g. items of a "Verordnungen ... (EU) 2024/1347, ..." list)
+        $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?|\(EU\) (?:Nr\. )?[0-9]+\/[0-9]+)';
 
         $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
         $buchstaben    = '(?:(?:Buchstabe|Buchstaben|Buchst\.) [a-z](?:(?:,| und| oder)? [a-z])*|lit\. [a-z]\))';
@@ -402,6 +403,12 @@ class syntax_plugin_normi extends SyntaxPlugin
         // Old regulation format: (EU) Nr. NNNN/YYYY
         if (preg_match('/^(?:Verordnung|Richtlinie) \(EU\) Nr\. ([0-9]+\/[0-9]{4})$/', $term, $eu)) {
             return self::EU_NUMBERS[$eu[1]] ?? null;
+        }
+        // Bare (EU) YYYY/NNNN or (EU) Nr. NNNN/YYYY without a "Verordnung"/"Richtlinie" prefix
+        // (e.g. items of a "Verordnungen ... 1. (EU) 2024/1347, 2. (EU) 2024/1348, ..." list)
+        if (preg_match('/^\(EU\) (?:Nr\. ([0-9]+\/[0-9]{4})|([0-9]{4}\/[0-9]+))$/', $term, $eu)) {
+            $number = $eu[1] !== '' ? $eu[1] : $eu[2];
+            return self::EU_NUMBERS[$number] ?? null;
         }
         // Old directive format: YYYY/NN/EU
         if (preg_match('/^Richtlinie ([0-9]{4}\/[0-9]+)\/EU$/', $term, $eu)) {
