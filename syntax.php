@@ -286,12 +286,6 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?<![0-9] )(?<![0-9][a-z] )(?:Absatz|Abs\.) ' . $absatzNums,
-            $mode,
-            'plugin_normi'
-        );
-
-        $this->Lexer->addSpecialPattern(
             '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
@@ -411,14 +405,6 @@ class syntax_plugin_normi extends SyntaxPlugin
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
-                'regulation' => '__current__',
-            ];
-        }
-
-        if (preg_match('/^(?:Absatz|Abs\.) [0-9]+/', $match)) {
-            return [
-                'match'      => $match,
-                'article'    => '__current__',
                 'regulation' => '__current__',
             ];
         }
