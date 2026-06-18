@@ -258,7 +258,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?(?:' . $subPartsInner . ')?+(?!, [0-9])(?! bis [0-9])',
+            // Possessive [0-9]++[a-z]?+ so the trailing lookaheads can't be satisfied by backtracking
+            // into a shorter article number (e.g. matching just "2" out of "25 bis 28")
+            '(?:Art\.|Artikel|des Artikels) [0-9]++[a-z]?+(?:' . $subPartsInner . ')?+(?!, [0-9])(?! bis [0-9])',
             $mode,
             'plugin_normi'
         );
