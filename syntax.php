@@ -251,6 +251,14 @@ class syntax_plugin_normi extends SyntaxPlugin
             'plugin_normi'
         );
 
+        // Bare "Artikel 25 bis 28 und 34" / "Artikel 25 bis 28" (no explicit law — falls back to the current page's regulation)
+        $artBisListInner = '[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*';
+        $this->Lexer->addSpecialPattern(
+            '(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner,
+            $mode,
+            'plugin_normi'
+        );
+
         $this->Lexer->addSpecialPattern(
             '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+',
             $mode,
@@ -320,6 +328,26 @@ class syntax_plugin_normi extends SyntaxPlugin
                     }
                 }
             }
+        }
+
+        // Bare "Artikel 25 bis 28 und 34" (no explicit law) — resolves via the current page's regulation
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels) )([0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*)$/', $match, $m)) {
+            preg_match_all('/(?:^|((?:,| und| oder) ))([0-9]+[a-z]?)(?: bis ([0-9]+[a-z]?))?/', $m[2], $am, PREG_SET_ORDER);
+            $items = [];
+            $connectors = [];
+            foreach ($am as $i => $pm) {
+                if ($i > 0) {
+                    $connectors[] = $pm[1];
+                }
+                $items[] = ['article' => strtolower($pm[2]), 'article_to' => (isset($pm[3]) && $pm[3] !== '') ? strtolower($pm[3]) : null];
+            }
+            return [
+                'match'      => $match,
+                'rangelist'  => $items,
+                'connectors' => $connectors,
+                'prefix'     => $m[1],
+                'regulation' => '__current__',
+            ];
         }
 
         if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und| oder) [0-9]+[a-z]?)+) (?!(?:und|oder) [0-9])(.+)$/', $match, $m)) {
@@ -589,6 +617,21 @@ class syntax_plugin_normi extends SyntaxPlugin
                     $renderer->internallink('art._' . $item['article_to'] . '_' . $regulation, $bm[2]);
                 } else {
                     $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $item['text']);
+                }
+            }
+            return true;
+        }
+
+        if (isset($data['rangelist'])) {
+            foreach ($data['rangelist'] as $i => $item) {
+                if ($i > 0) {
+                    $renderer->doc .= hsc($data['connectors'][$i - 1]);
+                }
+                $fromText = $i === 0 ? $data['prefix'] . $item['article'] : $item['article'];
+                $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $fromText);
+                if ($item['article_to'] !== null) {
+                    $renderer->doc .= ' bis ';
+                    $renderer->internallink('art._' . $item['article_to'] . '_' . $regulation, $item['article_to']);
                 }
             }
             return true;
