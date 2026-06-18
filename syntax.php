@@ -40,7 +40,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             'Resettlementverordnung', 'ResettlementVO',
         ],
         'ammvo' => [
-            'Asyl- und Migrationsmanagement-Verordnung', 'AMM-VO', 'AMMVO',
+            'Asyl- und Migrationsmanagement-Verordnung', 'Asyl- und MigrationsmanagementVO', 'Asyl- und Migrationsmanagement-VO', 'AMM-VO', 'AMMVO',
         ],
         'screening-konsistenz-verordnung' => [
             'Screening-Konsistenz-Verordnung', 'Screening-Konsistenz-VO',
