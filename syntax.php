@@ -246,7 +246,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -363,7 +363,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^((?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?) bis ([0-9]+[a-z]?) (.+)$/', $match, $m)) {
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?) bis ([0-9]+[a-z]?) (.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'prefix'     => $m[1],

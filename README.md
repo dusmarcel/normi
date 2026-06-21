@@ -20,30 +20,31 @@ Nach der Artikelnummer können optional Untereinheiten in folgender Reihenfolge 
 
 | Einheit | Schreibweisen |
 |---|---|
-| Absatz | `Absatz`, `Abs.`, `Absätze` (Plural); Nummern durch `,`, `und`, `oder` getrennt oder als Bereich mit `bis` (z. B. `Absatz 1 bis 3, 5 und 7 bis 9` oder `Absatz 2 oder 3`) |
-| Unterabsatz | `Unterabsatz`, `UA` |
+| Absatz | `Absatz`, `Abs.`, `Absätze` (Plural); Nummern durch `,`, `und`, `oder` getrennt oder als Bereich mit `bis` (z. B. `Absatz 1 bis 3, 5 und 7 bis 9` oder `Absatz 2 oder 3`); kann direkt mit `, Unterabsatz …` bzw. `, Unterabsätze …` fortgesetzt werden (z. B. `Absatz 1, Unterabsätze 2 bis 8`) |
+| Unterabsatz | `Unterabsatz`, `Unterabsätze` (Plural), `UA`; Nummern/Bereiche wie bei Absatz |
 | Satz | `Satz`, `S.` |
 | Nummer | `Nummer`, `Nr.` |
-| Buchstabe | `Buchstabe a, b oder c`, `lit. a)` |
+| Buchstabe | `Buchstabe`, `Buchstaben` (Plural), `Buchst.`, `lit. a)`; mehrere Buchstaben als Liste (`Buchstabe a, b oder c`, `Buchstaben a b und c`) oder mit wiederholtem `Buchstabe`/`Buchstaben` (`Buchstabe b und Buchstabe d`); optional mit Zusatz `erste`/`zweite Alternative` oder `Variante` (z. B. `Buchstabe b erste Alternative`) |
 
 Alle Untereinheiten sind optional und beeinflussen nur den Linktext, nicht das Linkziel.
 
 ### Aufzählungen und Bereiche
 
-**Aufzählungen** mit Komma und/oder „und" werden erkannt: Jeder genannte Artikel erhält einen eigenen Link.
+**Aufzählungen** mit Komma, „und" oder „oder" werden erkannt (z. B. `Artikel 5 oder 7`, `§ 25, 26 und 27`): Jeder genannte Artikel erhält einen eigenen Link.
 
-**Bereichsangaben** mit „bis" werden ebenfalls erkannt: Der erste und der letzte Artikel werden je einzeln verlinkt, „bis" bleibt als Klartext erhalten.
+**Bereichsangaben** mit „bis" werden ebenfalls erkannt: Der erste und der letzte Artikel werden je einzeln verlinkt, „bis" bleibt als Klartext erhalten. Auch Kombinationen aus Bereichen und Aufzählungen ohne Rechtsaktangabe werden erkannt (z. B. `Artikel 25 bis 28 und 34`).
 
 ### Kontextbasierte Verlinkung
 
 Wird kein Rechtsaktname genannt, versucht das Plugin, die gemeinte Norm aus dem Kontext der aktuellen Wiki-Seite zu ermitteln — zuerst aus der **Seitenüberschrift**, dann als Fallback aus der **Page-ID** (z. B. enthält `art._60a_aufenthaltsgesetz` den Slug `aufenthaltsgesetz`). Das gilt für:
 
 - **Selbstverweise** wie `der vorliegenden Verordnung`, `der vorliegenden Richtlinie`, `des vorliegenden Gesetzes`
-- **Bare Artikelverweise** ohne Rechtsaktangabe, z. B. `Artikel 42 Absätze 1 und 3` oder `Artikeln 14 und 15`
+- **Bare Artikelverweise** ohne Rechtsaktangabe, z. B. `Artikel 42 Absätze 1 und 3`, `Artikeln 14 und 15` oder `Artikel 25 bis 28 und 34`
 - **Bare Paragraphenverweise** ohne Gesetzesangabe, z. B. `§ 25 Abs. 3` oder `§§ 16b, 16c und 17`
-- **Standalone-Absatzverweise** wie `Absatz 1` oder `Absatz 2 oder 3` (ohne §-Nummer): Das Plugin ermittelt die §-Nummer ebenfalls aus dem Seitentitel oder der Page-ID (Muster `art._[Nummer]_[Slug]`) und verlinkt auf den entsprechenden Artikel.
 
 Lässt sich weder aus der Überschrift noch aus der Page-ID eine bekannte Norm ableiten, bleibt der Ausdruck unverlinkt.
+
+In **Tabellen** wird zusätzlich die Kopfzeile (erste Zeile) der jeweiligen Spalte herangezogen: Nennt die Kopfzelle einer Spalte einen Rechtsakt, werden bare Artikelverweise in dieser Spalte (ab der zweiten Zeile) auf diesen Rechtsakt statt auf die aktuelle Seite bezogen.
 
 **Einschränkungen:**
 
@@ -69,7 +70,9 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | `Art. 7 bis 9 Krisenverordnung` | Zwei Links (Art. 7 und Art. 9), „bis" als Klartext |
 | `Artikel 42 Absätze 1 und 3` | Ein Link (Norm aus Seitentitel) |
 | `Artikeln 14 und 15` | Zwei Links (Norm aus Seitentitel) |
-| `Absatz 1` | Ein Link (Norm + §-Nummer aus Seitentitel/Page-ID) |
+| `Artikel 5 oder 7 der Verordnung (EU) 2024/1356` | Zwei Links (Art. 5 und Art. 7) |
+| `Artikel 25 bis 28 und 34` | Drei Links (Art. 25, 28 und 34; Norm aus Seitentitel) |
+| `Artikel 23 Absatz 2 Unterabsatz 1 Buchstaben a b und c` | Ein Link auf Art. 23 |
 
 ## Unterstützte Rechtsakte
 
@@ -82,12 +85,19 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | Aufnahmerichtlinie (EU) 2024/1346 | AufnahmeRL, Aufnahmerichtlinie 2024, AufnahmeRL 2024 |
 | Grenzrückführungsverordnung (EU) 2024/1349 | GrenzrückführungsVO, GrenzRüFüVO, GrenzRFVO |
 | Resettlementverordnung (EU) 2024/1350 | ResettlementVO |
-| Asyl- und Migrationsmanagement-Verordnung (EU) 2024/1351 | AMM-VO, AMMVO |
+| Asyl- und Migrationsmanagement-Verordnung (EU) 2024/1351 | Asyl- und MigrationsmanagementVO, Asyl- und Migrationsmanagement-VO, AMM-VO, AMMVO |
 | Screening-Konsistenz-Verordnung (EU) 2024/1352 | Screening-Konsistenz-VO |
 | Screening-Verordnung (EU) 2024/1356 | Screening-VO |
 | Eurodac-Verordnung (EU) 2024/1358 | Eurodac-VO, Eurodac-Verordnung 2024, Eurodac-VO 2024 |
 | Krisenverordnung (EU) 2024/1359 | KrisenVO |
 | EUAA-Verordnung (EU) 2021/2303 | EUAA-VO |
+
+Auch ein nacktes `(EU) 2024/1347` ohne vorangestelltes „Verordnung"/„Richtlinie" wird erkannt, z. B. in nummerierten Aufzählungen wie:
+
+```
+1. (EU) 2024/1347,
+2. (EU) 2024/1348, …
+```
 
 ### Ältere Rechtsakte (GEAS-System bis 2024)
 
@@ -131,7 +141,6 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 | `§ 25 Abs. 3` | Ein Link (Norm aus Seitentitel) |
 | `§§ 16b, 16c, 16e und 17` | Vier Links (Norm aus Seitentitel) |
 | `des § 3 Abs. 1` | Ein Link (Norm aus Seitentitel) |
-| `Absatz 3` | Ein Link (§-Nummer + Norm aus Page-ID) |
 
 ### Versionsdifferenzierung bei Eurodac und Aufnahmerichtlinie
 
