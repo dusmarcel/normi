@@ -83,6 +83,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         'rückführungsrichtlinie' => [
             'Rückführungsrichtlinie', 'RückführungsRL',
         ],
+        'aeuv' => [
+            'Vertrag über die Arbeitsweise der Europäischen Union', 'AEUV',
+        ],
         'aufenthaltsgesetz' => [
             'Aufenthaltsgesetzes', 'Aufenthaltsgesetz', 'AufenthG',
         ],
@@ -130,6 +133,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         'eurodac-verordnung-2013'         => 'verordnung_eu_nr._603_2013',
         'easo-verordnung'                 => 'verordnung_eu_nr._439_2010',
         'rückführungsrichtlinie'          => 'richtlinie_2008_115_eg',
+        'aeuv'                            => 'aeuv',
         'aufenthaltsgesetz'               => 'aufenthaltsgesetz',
         'asylgesetz'                      => 'asylgesetz',
         'beschäftigungsverordnung'        => 'beschäftigungsverordnung',

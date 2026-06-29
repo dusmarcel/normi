@@ -1,6 +1,6 @@
 # normi Plugin für DokuWiki
 
-Erzeugt automatisch interne Links auf Wiki-Seiten für Artikel von EU-Rechtsakten des Gemeinsamen Europäischen Asylsystems (GEAS) sowie für Paragraphen nationaler deutscher Gesetze.
+Erzeugt automatisch interne Links auf Wiki-Seiten für Artikel von EU-Rechtsakten des Gemeinsamen Europäischen Asylsystems (GEAS), EU-Primärrecht (AEUV) sowie für Paragraphen nationaler deutscher Gesetze.
 
 ## Installation
 
@@ -73,6 +73,7 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | `Artikel 5 oder 7 der Verordnung (EU) 2024/1356` | Zwei Links (Art. 5 und Art. 7) |
 | `Artikel 25 bis 28 und 34` | Drei Links (Art. 25, 28 und 34; Norm aus Seitentitel) |
 | `Artikel 23 Absatz 2 Unterabsatz 1 Buchstaben a b und c` | Ein Link auf Art. 23 |
+| `Artikel 78 AEUV` | Ein Link auf Art. 78 |
 
 ## Unterstützte Rechtsakte
 
@@ -112,6 +113,14 @@ Auch ein nacktes `(EU) 2024/1347` ohne vorangestelltes „Verordnung"/„Richtli
 | Rückführungsrichtlinie 2008/115/EG | RückführungsRL |
 
 Alle Synonyme und EU-Nummern eines Rechtsakts verlinken auf dieselbe Zielseite.
+
+### EU-Primärrecht
+
+| Rechtsakt | Synonyme |
+|---|---|
+| Vertrag über die Arbeitsweise der Europäischen Union | AEUV |
+
+Der AEUV wird wie die übrigen EU-Rechtsakte mit `Artikel`/`Art.` zitiert (nicht mit `§`), hat aber keine EU-Nummer und keine Versionsdifferenzierung.
 
 ### Nationale Gesetze (Deutschland)
 
