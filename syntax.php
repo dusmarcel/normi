@@ -17,6 +17,7 @@ class syntax_plugin_normi extends SyntaxPlugin
     private $lexerSynonymPattern = '';
     private $lexerEuPattern = '';
     private $lexerSubPartsPattern = '';
+    private $lexerNationalPattern = '';
 
     // Canonical page slug => list of text synonyms
     const REGULATIONS = [
@@ -217,6 +218,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         $this->lexerSynonymPattern  = $synonymPattern;
         $this->lexerEuPattern       = $euPattern;
         $this->lexerSubPartsPattern = $subPartsInner;
+        $this->lexerNationalPattern = $nationalPattern;
 
         // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie 2008/115/EG"
         $singleItemPat = '(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?' . $subPartsInner . ')?';
@@ -235,6 +237,17 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         $this->Lexer->addSpecialPattern(
             '(?:des )?§(?:§)? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
+            $mode,
+            'plugin_normi'
+        );
+
+        // Compound §-list without repeated "§": "§§ 2 Abs. 3, 5 Abs. 1 Nr. 1 AufenthG"
+        // (each item may carry its own Absatz/Unterabsatz/Satz/Nr./Buchstabe; not possessive so the
+        // greedy Absatz-number list inside subPartsInner can backtrack to find the correct item split)
+        $sectionItemPat = '(?:(?:des )?§(?:§)? )?[0-9]+[a-z]?(?:' . $subPartsInner . ')?';
+        $sectionSep     = '(?:,| und| oder) ';
+        $this->Lexer->addSpecialPattern(
+            '(?:des )?§(?:§)? (?:' . $sectionItemPat . $sectionSep . ')+' . $sectionItemPat . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -313,6 +326,33 @@ class syntax_plugin_normi extends SyntaxPlugin
                             if (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?) bis ([0-9]+[a-z]?)/', $itemText, $bm)) {
                                 $parsedItems[] = ['text' => $displayText, 'article' => strtolower($bm[1]), 'article_to' => strtolower($bm[2])];
                             } elseif (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
+                            }
+                        }
+                        if (count($parsedItems) >= 2) {
+                            return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connMatches[0], 'regulation' => $regSlug];
+                        }
+                    }
+                }
+            }
+        }
+
+        // Compound §-list without repeated "§": "§§ 2 Abs. 3, 5 Abs. 1 Nr. 1 AufenthG"
+        if (!empty($this->lexerNationalPattern)) {
+            $regPfxPat = '(?:der |des |dem |die |den )?';
+            if (preg_match('~ ' . $regPfxPat . '(' . $this->lexerNationalPattern . ')$~', $match, $rm)) {
+                $regSlug = $this->resolveRegulation($rm[1]);
+                if ($regSlug !== null) {
+                    $regSuffix = $rm[0];
+                    $itemsText = substr($match, 0, -strlen($regSuffix));
+                    $sepPat = '/(?:,| und| oder) (?=[0-9])/';
+                    $items = preg_split($sepPat, $itemsText);
+                    if (count($items) >= 2) {
+                        preg_match_all($sepPat, $itemsText, $connMatches);
+                        $parsedItems = [];
+                        foreach ($items as $idx => $itemText) {
+                            $displayText = ($idx === count($items) - 1) ? $itemText . $regSuffix : $itemText;
+                            if (preg_match('/^(?:(?:des )?§(?:§)? )?([0-9]+[a-z]?)/', $itemText, $nm)) {
                                 $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
                             }
                         }

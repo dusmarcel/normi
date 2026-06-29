@@ -8,7 +8,11 @@
       "Bash(sed -i \"s/with open\\('debug_text.txt'.*/with open\\('\\\\/tmp\\\\/bug2_sentence.txt', encoding='utf-8'\\) as f:/\" /tmp/debug_lexer_bug2.py)",
       "Bash(python /tmp/debug_lexer_bug2.py)",
       "Bash(rm /tmp/debug_lexer_bug2.py /tmp/bug2_sentence.txt)",
-      "Bash(python debug_lexer2.py)"
+      "Bash(python debug_lexer2.py)",
+      "Bash(python /tmp/test_section.py)",
+      "Bash(rm /tmp/test_section.py)",
+      "Bash(python /tmp/test_full.py)",
+      "Bash(rm /tmp/test_full.py)"
     ]
   }
 }
