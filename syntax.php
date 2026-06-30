@@ -256,6 +256,16 @@ class syntax_plugin_normi extends SyntaxPlugin
             'plugin_normi'
         );
 
+        // Compound: "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348"
+        // (subsequent items are bare digits with optional subParts; not possessive so
+        // absatzNums inside subPartsInner can backtrack to find the correct item boundary)
+        $artItemWithSub = '[0-9]+[a-z]?(?:' . $subPartsInner . ')?';
+        $this->Lexer->addSpecialPattern(
+            '(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artItemWithSub . '(?:(?:,| und| oder) ' . $artItemWithSub . ')+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            $mode,
+            'plugin_normi'
+        );
+
         $this->Lexer->addSpecialPattern(
             '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
@@ -313,6 +323,8 @@ class syntax_plugin_normi extends SyntaxPlugin
     public function handle($match, $state, $pos, Doku_Handler $handler)
     {
         // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie"
+        // Also handles: "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348"
+        // (subsequent items are bare digits without a repeated "Artikel" prefix)
         if (!empty($this->lexerSynonymPattern)) {
             $regPfxPat = '(?:der |des |dem |die |den )?';
             if (preg_match('~ ' . $regPfxPat . '(' . $this->lexerSynonymPattern . '|' . $this->lexerEuPattern . ')$~', $match, $rm)) {
@@ -320,8 +332,14 @@ class syntax_plugin_normi extends SyntaxPlugin
                 if ($regSlug !== null) {
                     $regSuffix = $rm[0];
                     $itemsText = substr($match, 0, -strlen($regSuffix));
+                    // Prefer splitting on "Artikel"-introducing separators (compound with repeated keyword);
+                    // fall back to bare-digit lookahead for "Artikeln N und M Absatz K" constructs.
                     $sepPat = '/(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))/';
                     $items = preg_split($sepPat, $itemsText);
+                    if (count($items) < 2) {
+                        $sepPat = '/(?:,| und| oder) (?=[0-9])/';
+                        $items = preg_split($sepPat, $itemsText);
+                    }
                     if (count($items) >= 2) {
                         preg_match_all($sepPat, $itemsText, $connMatches);
                         $parsedItems = [];
@@ -330,6 +348,9 @@ class syntax_plugin_normi extends SyntaxPlugin
                             if (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?) bis ([0-9]+[a-z]?)/', $itemText, $bm)) {
                                 $parsedItems[] = ['text' => $displayText, 'article' => strtolower($bm[1]), 'article_to' => strtolower($bm[2])];
                             } elseif (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
+                            } elseif (preg_match('/^([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                // Bare-digit item (no repeated "Artikel" prefix, e.g. "79 Absatz 3")
                                 $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
                             }
                         }

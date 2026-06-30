@@ -71,6 +71,7 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | `Artikel 42 Absätze 1 und 3` | Ein Link (Norm aus Seitentitel) |
 | `Artikeln 14 und 15` | Zwei Links (Norm aus Seitentitel) |
 | `Artikel 5 oder 7 der Verordnung (EU) 2024/1356` | Zwei Links (Art. 5 und Art. 7) |
+| `Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348` | Zwei Links (Art. 1 und Art. 79) |
 | `Artikel 25 bis 28 und 34` | Drei Links (Art. 25, 28 und 34; Norm aus Seitentitel) |
 | `Artikel 23 Absatz 2 Unterabsatz 1 Buchstaben a b und c` | Ein Link auf Art. 23 |
 | `Artikel 78 AEUV` | Ein Link auf Art. 78 |
