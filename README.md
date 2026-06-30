@@ -30,7 +30,7 @@ Alle Untereinheiten sind optional und beeinflussen nur den Linktext, nicht das L
 
 ### Aufzählungen und Bereiche
 
-**Aufzählungen** mit Komma, „und" oder „oder" werden erkannt (z. B. `Artikel 5 oder 7`, `§ 25, 26 und 27`): Jeder genannte Artikel erhält einen eigenen Link.
+**Aufzählungen** mit Komma, „und", „oder" oder „sowie" werden erkannt (z. B. `Artikel 5 oder 7`, `§ 25, 26 und 27`): Jeder genannte Artikel erhält einen eigenen Link.
 
 **Bereichsangaben** mit „bis" werden ebenfalls erkannt: Der erste und der letzte Artikel werden je einzeln verlinkt, „bis" bleibt als Klartext erhalten. Auch Kombinationen aus Bereichen und Aufzählungen ohne Rechtsaktangabe werden erkannt (z. B. `Artikel 25 bis 28 und 34`).
 
@@ -43,6 +43,10 @@ Wird kein Rechtsaktname genannt, versucht das Plugin, die gemeinte Norm aus dem 
 - **Bare Paragraphenverweise** ohne Gesetzesangabe, z. B. `§ 25 Abs. 3` oder `§§ 16b, 16c und 17`
 
 Lässt sich weder aus der Überschrift noch aus der Page-ID eine bekannte Norm ableiten, bleibt der Ausdruck unverlinkt.
+
+### Verlinkung unterdrücken (`!`)
+
+Ein vorangestelltes `!` (analog zu DokuWikis eigener `!CamelCase`-Schreibweise) weist normi an, die unmittelbar folgende Norm **nicht** zu verlinken und stattdessen als reinen Text auszugeben, z. B. `!§ 14 BGB` oder `!Art. 5 Anerkennungsverordnung`. So bleibt der Text für andere Mechanismen (z. B. ein dejure.org-artiges Verlinkungs-Plugin, das auf den gerenderten Text zugreift) zugänglich — besonders nützlich für Normen, die in diesem Wiki nicht als eigene Seite abgebildet sind.
 
 In **Tabellen** wird zusätzlich die Kopfzeile (erste Zeile) der jeweiligen Spalte herangezogen: Nennt die Kopfzelle einer Spalte einen Rechtsakt, werden bare Artikelverweise in dieser Spalte (ab der zweiten Zeile) auf diesen Rechtsakt statt auf die aktuelle Seite bezogen.
 
@@ -75,6 +79,7 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | `Artikel 25 bis 28 und 34` | Drei Links (Art. 25, 28 und 34; Norm aus Seitentitel) |
 | `Artikel 23 Absatz 2 Unterabsatz 1 Buchstaben a b und c` | Ein Link auf Art. 23 |
 | `Artikel 78 AEUV` | Ein Link auf Art. 78 |
+| `!Art. 5 Anerkennungsverordnung` | Kein Link, reiner Text (Verlinkung unterdrückt) |
 
 ## Unterstützte Rechtsakte
 
@@ -149,6 +154,7 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 | `§ 26 Absatz 2 oder 3 des Asylgesetzes` | Ein Link auf § 26 |
 | `§ 60 Abs. 1 bis 3, 5 und 7 bis 9 AufenthG` | Ein Link auf § 60 |
 | `§ 60 Absatz 5 und 7 des Aufenthaltsgesetzes` | Ein Link auf § 60 (Absatz-Liste, kein zweiter Paragraph) |
+| `§§ 16a bis 16c, 16e sowie 16f` | Vier Links (§ 16a, 16c, 16e und 16f; Norm aus Seitentitel) |
 | `§ 25 Abs. 3` | Ein Link (Norm aus Seitentitel) |
 | `§§ 16b, 16c, 16e und 17` | Vier Links (Norm aus Seitentitel) |
 | `des § 3 Abs. 1` | Ein Link (Norm aus Seitentitel) |

@@ -193,13 +193,13 @@ class syntax_plugin_normi extends SyntaxPlugin
         // and bare (EU) YYYY/NNNN or (EU) Nr. NNNN/YYYY (e.g. items of a "Verordnungen ... (EU) 2024/1347, ..." list)
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?|\(EU\) (?:Nr\. )?[0-9]+\/[0-9]+)';
 
-        $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
+        $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
         // Optional "erste/zweite Alternative" or "Variante" qualifier after a Buchstabe letter
         $buchstabeQualifier = '(?: (?:erste|zweite|dritte|vierte|fünfte|sechste|siebte|achte|neunte|zehnte) (?:Alternative|Variante))?';
         // (?![a-zäöüß]) ensures the letter is a standalone token, not the start of a following word (e.g. "der")
         $buchstabeLetter = '[a-z](?![a-zäöüß])' . $buchstabeQualifier;
         $buchstaben = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
-            . '(?:(?:,| und| oder)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
+            . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
             . '|lit\. [a-z]\))';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstaben . ')?';
         $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
@@ -228,19 +228,19 @@ class syntax_plugin_normi extends SyntaxPlugin
         $singleItemPat = '(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?' . $subPartsInner . ')?';
         $compoundSep   = '(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))';
         $this->Lexer->addSpecialPattern(
-            '(?:' . $singleItemPat . $compoundSep . ')++' . $singleItemPat . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '!?(?:' . $singleItemPat . $compoundSep . ')++' . $singleItemPat . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
+            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:des )?§(?:§)? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
+            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -249,9 +249,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         // (each item may carry its own Absatz/Unterabsatz/Satz/Nr./Buchstabe; not possessive so the
         // greedy Absatz-number list inside subPartsInner can backtrack to find the correct item split)
         $sectionItemPat = '(?:(?:des )?§(?:§)? )?[0-9]+[a-z]?(?:' . $subPartsInner . ')?';
-        $sectionSep     = '(?:,| und| oder) ';
+        $sectionSep     = '(?:,| und| oder| sowie) ';
         $this->Lexer->addSpecialPattern(
-            '(?:des )?§(?:§)? (?:' . $sectionItemPat . $sectionSep . ')+' . $sectionItemPat . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
+            '!?(?:des )?§(?:§)? (?:' . $sectionItemPat . $sectionSep . ')+' . $sectionItemPat . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -259,27 +259,27 @@ class syntax_plugin_normi extends SyntaxPlugin
         // Also handles "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348": the trailing
         // $subParts (optional) lets the LAST item carry Absatz/Unterabsatz/… before the regulation.
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
 
         // Bare "Artikel 25 bis 28 und 34" / "Artikel 25 bis 28" (no explicit law — falls back to the current page's regulation)
-        $artBisListInner = '[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*';
+        $artBisListInner = '[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*';
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner,
+            '!?(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner,
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+',
+            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+',
             $mode,
             'plugin_normi'
         );
@@ -287,25 +287,32 @@ class syntax_plugin_normi extends SyntaxPlugin
         $this->Lexer->addSpecialPattern(
             // Possessive [0-9]++[a-z]?+ so the trailing lookaheads can't be satisfied by backtracking
             // into a shorter article number (e.g. matching just "2" out of "25 bis 28")
-            '(?:Art\.|Artikel|des Artikels) [0-9]++[a-z]?+(?:' . $subPartsInner . ')?+(?!, [0-9])(?! bis [0-9])',
+            '!?(?:Art\.|Artikel|des Artikels) [0-9]++[a-z]?+(?:' . $subPartsInner . ')?+(?!, [0-9])(?! bis [0-9])',
+            $mode,
+            'plugin_normi'
+        );
+
+        // Bare "§§ 16a bis 16c, 16e sowie 16f" (no explicit law — falls back to the current page's regulation)
+        $this->Lexer->addSpecialPattern(
+            '!?(?:des )?§(?:§)? ' . $artBisListInner,
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+',
+            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+',
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder) [0-9])' . $subParts,
+            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder| sowie) [0-9])' . $subParts,
             $mode,
             'plugin_normi'
         );
 
         $this->Lexer->addSpecialPattern(
-            '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '!?(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -313,6 +320,21 @@ class syntax_plugin_normi extends SyntaxPlugin
 
     /** @inheritDoc */
     public function handle($match, $state, $pos, Doku_Handler $handler)
+    {
+        // Leading "!" (mirroring DokuWiki's own "!CamelCase" escape convention) tells normi to
+        // leave this reference as plain text, e.g. so another plugin (dejure.org-style law linkers)
+        // can pick it up — useful for norms not mapped to a page in this wiki.
+        $ignore = false;
+        if (substr($match, 0, 1) === '!') {
+            $ignore = true;
+            $match = substr($match, 1);
+        }
+        $data = $this->parseMatch($match);
+        $data['ignore'] = $ignore;
+        return $data;
+    }
+
+    private function parseMatch(string $match): array
     {
         // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie"
         // Also handles: "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348"
@@ -335,7 +357,7 @@ class syntax_plugin_normi extends SyntaxPlugin
                         $sepPat = '/(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))/';
                         $items = preg_split($sepPat, $itemsText);
                         if (count($items) < 2) {
-                            $sepPat = '/(?:,| und| oder) (?=[0-9])/';
+                            $sepPat = '/(?:,| und| oder| sowie) (?=[0-9])/';
                             $items = preg_split($sepPat, $itemsText);
                         }
                         if (count($items) >= 2) {
@@ -375,7 +397,7 @@ class syntax_plugin_normi extends SyntaxPlugin
                     // branch below handle it as one cohesive reference.
                     $singleItemFullPat = '/^(?:(?:des )?§(?:§)? )?[0-9]+[a-z]?(?:' . $this->lexerSubPartsPattern . ')?$/';
                     if (!preg_match($singleItemFullPat, $itemsText)) {
-                        $sepPat = '/(?:,| und| oder) (?=[0-9])/';
+                        $sepPat = '/(?:,| und| oder| sowie) (?=[0-9])/';
                         $items = preg_split($sepPat, $itemsText);
                         if (count($items) >= 2) {
                             preg_match_all($sepPat, $itemsText, $connMatches);
@@ -395,9 +417,9 @@ class syntax_plugin_normi extends SyntaxPlugin
             }
         }
 
-        // Bare "Artikel 25 bis 28 und 34" (no explicit law) — resolves via the current page's regulation
-        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels) )([0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*)$/', $match, $m)) {
-            preg_match_all('/(?:^|((?:,| und| oder) ))([0-9]+[a-z]?)(?: bis ([0-9]+[a-z]?))?/', $m[2], $am, PREG_SET_ORDER);
+        // Bare "Artikel 25 bis 28 und 34" / "§§ 16a bis 16c, 16e sowie 16f" (no explicit law) — resolves via the current page's regulation
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*)$/', $match, $m)) {
+            preg_match_all('/(?:^|((?:,| und| oder| sowie) ))([0-9]+[a-z]?)(?: bis ([0-9]+[a-z]?))?/', $m[2], $am, PREG_SET_ORDER);
             $items = [];
             $connectors = [];
             foreach ($am as $i => $pm) {
@@ -415,8 +437,8 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und| oder) [0-9]+[a-z]?)+) (?!(?:und|oder) [0-9])(.+)$/', $match, $m)) {
-            preg_match_all('/((?:,| und| oder) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+) (?!(?:und|oder|sowie) [0-9])(.+)$/', $match, $m)) {
+            preg_match_all('/((?:,| und| oder| sowie) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
             $connectors = [];
             foreach ($parts as $part) {
@@ -453,8 +475,8 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und| oder) [0-9]+[a-z]?)+)$/', $match, $m)) {
-            preg_match_all('/((?:,| und| oder) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?)((?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+)$/', $match, $m)) {
+            preg_match_all('/((?:,| und| oder| sowie) )([0-9]+[a-z]?)/', $m[3], $parts, PREG_SET_ORDER);
             $articles = [$m[2]];
             $connectors = [];
             foreach ($parts as $part) {
@@ -632,6 +654,11 @@ class syntax_plugin_normi extends SyntaxPlugin
         if ($mode !== 'xhtml') {
             $renderer->doc .= $data['match'];
             return false;
+        }
+
+        if (!empty($data['ignore'])) {
+            $renderer->doc .= hsc($data['match']);
+            return true;
         }
 
         $regulation = $data['regulation'];
