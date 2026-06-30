@@ -148,6 +148,7 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 | `des § 3 Abs. 1 AufenthG` | Ein Link auf § 3 (Genitiv-Präfix) |
 | `§ 26 Absatz 2 oder 3 des Asylgesetzes` | Ein Link auf § 26 |
 | `§ 60 Abs. 1 bis 3, 5 und 7 bis 9 AufenthG` | Ein Link auf § 60 |
+| `§ 60 Absatz 5 und 7 des Aufenthaltsgesetzes` | Ein Link auf § 60 (Absatz-Liste, kein zweiter Paragraph) |
 | `§ 25 Abs. 3` | Ein Link (Norm aus Seitentitel) |
 | `§§ 16b, 16c, 16e und 17` | Vier Links (Norm aus Seitentitel) |
 | `des § 3 Abs. 1` | Ein Link (Norm aus Seitentitel) |

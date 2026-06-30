@@ -324,30 +324,37 @@ class syntax_plugin_normi extends SyntaxPlugin
                 if ($regSlug !== null) {
                     $regSuffix = $rm[0];
                     $itemsText = substr($match, 0, -strlen($regSuffix));
-                    // Prefer splitting on "Artikel"-introducing separators (compound with repeated keyword);
-                    // fall back to bare-digit lookahead for "Artikeln N und M Absatz K" constructs.
-                    $sepPat = '/(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))/';
-                    $items = preg_split($sepPat, $itemsText);
-                    if (count($items) < 2) {
-                        $sepPat = '/(?:,| und| oder) (?=[0-9])/';
+                    // If itemsText is actually just ONE Artikel item with a full subParts tail
+                    // (e.g. "Artikel 5 Absatz 1 und 3"), it's not a compound at all — the "und 3"
+                    // belongs to the Absatz-list, not a second Artikel. Skip and let the single-item
+                    // branch below handle it as one cohesive reference.
+                    $singleItemFullPat = '/^(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?' . $this->lexerSubPartsPattern . ')?$/';
+                    if (!preg_match($singleItemFullPat, $itemsText)) {
+                        // Prefer splitting on "Artikel"-introducing separators (compound with repeated keyword);
+                        // fall back to bare-digit lookahead for "Artikeln N und M Absatz K" constructs.
+                        $sepPat = '/(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))/';
                         $items = preg_split($sepPat, $itemsText);
-                    }
-                    if (count($items) >= 2) {
-                        preg_match_all($sepPat, $itemsText, $connMatches);
-                        $parsedItems = [];
-                        foreach ($items as $idx => $itemText) {
-                            $displayText = ($idx === count($items) - 1) ? $itemText . $regSuffix : $itemText;
-                            if (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?) bis ([0-9]+[a-z]?)/', $itemText, $bm)) {
-                                $parsedItems[] = ['text' => $displayText, 'article' => strtolower($bm[1]), 'article_to' => strtolower($bm[2])];
-                            } elseif (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?)/', $itemText, $nm)) {
-                                $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
-                            } elseif (preg_match('/^([0-9]+[a-z]?)/', $itemText, $nm)) {
-                                // Bare-digit item (no repeated "Artikel" prefix, e.g. "79 Absatz 3")
-                                $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
-                            }
+                        if (count($items) < 2) {
+                            $sepPat = '/(?:,| und| oder) (?=[0-9])/';
+                            $items = preg_split($sepPat, $itemsText);
                         }
-                        if (count($parsedItems) >= 2) {
-                            return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connMatches[0], 'regulation' => $regSlug];
+                        if (count($items) >= 2) {
+                            preg_match_all($sepPat, $itemsText, $connMatches);
+                            $parsedItems = [];
+                            foreach ($items as $idx => $itemText) {
+                                $displayText = ($idx === count($items) - 1) ? $itemText . $regSuffix : $itemText;
+                                if (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?) bis ([0-9]+[a-z]?)/', $itemText, $bm)) {
+                                    $parsedItems[] = ['text' => $displayText, 'article' => strtolower($bm[1]), 'article_to' => strtolower($bm[2])];
+                                } elseif (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                    $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
+                                } elseif (preg_match('/^([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                    // Bare-digit item (no repeated "Artikel" prefix, e.g. "79 Absatz 3")
+                                    $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
+                                }
+                            }
+                            if (count($parsedItems) >= 2) {
+                                return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connMatches[0], 'regulation' => $regSlug];
+                            }
                         }
                     }
                 }
@@ -362,19 +369,26 @@ class syntax_plugin_normi extends SyntaxPlugin
                 if ($regSlug !== null) {
                     $regSuffix = $rm[0];
                     $itemsText = substr($match, 0, -strlen($regSuffix));
-                    $sepPat = '/(?:,| und| oder) (?=[0-9])/';
-                    $items = preg_split($sepPat, $itemsText);
-                    if (count($items) >= 2) {
-                        preg_match_all($sepPat, $itemsText, $connMatches);
-                        $parsedItems = [];
-                        foreach ($items as $idx => $itemText) {
-                            $displayText = ($idx === count($items) - 1) ? $itemText . $regSuffix : $itemText;
-                            if (preg_match('/^(?:(?:des )?§(?:§)? )?([0-9]+[a-z]?)/', $itemText, $nm)) {
-                                $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
+                    // If itemsText is actually just ONE § item with a full subParts tail
+                    // (e.g. "§ 60 Absatz 5 und 7"), it's not a compound at all — the "und 7"
+                    // belongs to the Absatz-list, not a second §. Skip and let the single-item
+                    // branch below handle it as one cohesive reference.
+                    $singleItemFullPat = '/^(?:(?:des )?§(?:§)? )?[0-9]+[a-z]?(?:' . $this->lexerSubPartsPattern . ')?$/';
+                    if (!preg_match($singleItemFullPat, $itemsText)) {
+                        $sepPat = '/(?:,| und| oder) (?=[0-9])/';
+                        $items = preg_split($sepPat, $itemsText);
+                        if (count($items) >= 2) {
+                            preg_match_all($sepPat, $itemsText, $connMatches);
+                            $parsedItems = [];
+                            foreach ($items as $idx => $itemText) {
+                                $displayText = ($idx === count($items) - 1) ? $itemText . $regSuffix : $itemText;
+                                if (preg_match('/^(?:(?:des )?§(?:§)? )?([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                    $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
+                                }
                             }
-                        }
-                        if (count($parsedItems) >= 2) {
-                            return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connMatches[0], 'regulation' => $regSlug];
+                            if (count($parsedItems) >= 2) {
+                                return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connMatches[0], 'regulation' => $regSlug];
+                            }
                         }
                     }
                 }
