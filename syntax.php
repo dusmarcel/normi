@@ -256,18 +256,10 @@ class syntax_plugin_normi extends SyntaxPlugin
             'plugin_normi'
         );
 
-        // Compound: "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348"
-        // (subsequent items are bare digits with optional subParts; not possessive so
-        // absatzNums inside subPartsInner can backtrack to find the correct item boundary)
-        $artItemWithSub = '[0-9]+[a-z]?(?:' . $subPartsInner . ')?';
+        // Also handles "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348": the trailing
+        // $subParts (optional) lets the LAST item carry Absatz/Unterabsatz/… before the regulation.
         $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artItemWithSub . '(?:(?:,| und| oder) ' . $artItemWithSub . ')+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
-            $mode,
-            'plugin_normi'
-        );
-
-        $this->Lexer->addSpecialPattern(
-            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder) [0-9]+[a-z]?)+' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
