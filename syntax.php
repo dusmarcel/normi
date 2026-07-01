@@ -206,6 +206,11 @@ class syntax_plugin_normi extends SyntaxPlugin
         $buchstabenSimple = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
             . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
             . '|lit\. [a-z]\))';
+        // Simplified subParts for the regulation-first pattern. Uses buchstabenSimple (one inner *-group)
+        // rather than buchstaben (two *-groups) so that the one outer *-loop in the Lexer pattern
+        // produces at most one level of nested repetition — safe for PCRE's compiled-size limit.
+        $subPartsSimple = '(?:(?: (?:Absatz|Abs\.) [0-9]+[a-z]?)?(?: (?:Unterabsatz|Unterabsätze|UA) [0-9]+)?'
+            . '(?: (?:Satz|S\.) [0-9]+)?(?: (?:Alternative|Alt\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?)';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
         $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
@@ -317,6 +322,18 @@ class syntax_plugin_normi extends SyntaxPlugin
             'plugin_normi'
         );
 
+        // Regulation-first: "AEUV, insbesondere auf Artikel 77 Absatz 2 und Artikel 79 Absatz 2 Buchstabe c"
+        // Registered before the standalone regulation pattern so this longer match wins when the
+        // "insbesondere/namentlich" connector is present; the standalone pattern still fires when the
+        // regulation appears alone (without the connector).
+        $regFirstItem = '(?:Artikel|Art\.) [0-9]+[a-z]?' . $subPartsSimple;
+        $this->Lexer->addSpecialPattern(
+            '!?(?:' . $synonymPattern . '|' . $euPattern . ')[,;]? (?:insbesondere|namentlich)(?: auf)? (?:den |die |das )?'
+            . $regFirstItem . '(?:(?:, (?:und )?| und )' . $regFirstItem . ')*',
+            $mode,
+            'plugin_normi'
+        );
+
         $this->Lexer->addSpecialPattern(
             '!?(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
@@ -342,6 +359,39 @@ class syntax_plugin_normi extends SyntaxPlugin
 
     private function parseMatch(string $match): array
     {
+        // Regulation-first: "AEUV, insbesondere auf Artikel 77 Absatz 2 und Artikel 79 Absatz 2 Buchstabe c"
+        // The regulation name precedes the article list, connected by "insbesondere" or "namentlich".
+        if (!empty($this->lexerSynonymPattern)) {
+            if (preg_match('/^((?:' . $this->lexerSynonymPattern . '|' . $this->lexerEuPattern . '))[,;]? (?:insbesondere|namentlich)(?: auf)? (?:den |die |das )?((?:Artikel|Art\.) .+)$/', $match, $rm)) {
+                $regSlug = $this->resolveRegulation($rm[1]);
+                if ($regSlug !== null) {
+                    $regPrefix     = $rm[1];
+                    $articlesText  = $rm[2];
+                    $connectorPhrase = substr($match, strlen($regPrefix), strlen($match) - strlen($regPrefix) - strlen($articlesText));
+                    $sepPat        = '/(?:, (?:und )?| und )(?=(?:Artikel|Art\.) [0-9])/';
+                    $artItems      = preg_split($sepPat, $articlesText);
+                    preg_match_all($sepPat, $articlesText, $connMatches);
+                    $parsedItems = [];
+                    foreach ($artItems as $itemText) {
+                        if (preg_match('/^(?:Artikel|Art\.) ([0-9]+[a-z]?)/', $itemText, $am)) {
+                            $parsedItems[] = ['text' => $itemText, 'article' => strtolower($am[1]), 'article_to' => null];
+                        }
+                    }
+                    if (!empty($parsedItems)) {
+                        return [
+                            'match'               => $match,
+                            'reg_first'           => true,
+                            'reg_first_prefix'    => $regPrefix,
+                            'reg_first_connector' => $connectorPhrase,
+                            'compound'            => $parsedItems,
+                            'connectors'          => $connMatches[0],
+                            'regulation'          => $regSlug,
+                        ];
+                    }
+                }
+            }
+        }
+
         // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie"
         // Also handles: "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348"
         // (subsequent items are bare digits without a repeated "Artikel" prefix)
@@ -696,6 +746,16 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
 
         if (isset($data['compound'])) {
+            if (isset($data['reg_first'])) {
+                // Output regulation name as a link to its start page, then the connector phrase
+                $regStartPage = self::START_PAGES[$regulation] ?? null;
+                if ($regStartPage !== null) {
+                    $renderer->internallink($regStartPage, $data['reg_first_prefix']);
+                } else {
+                    $renderer->doc .= hsc($data['reg_first_prefix']);
+                }
+                $renderer->doc .= hsc($data['reg_first_connector']);
+            }
             foreach ($data['compound'] as $i => $item) {
                 if ($i > 0) {
                     $renderer->doc .= hsc($data['connectors'][$i - 1]);
