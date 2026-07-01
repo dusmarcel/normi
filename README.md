@@ -23,8 +23,9 @@ Nach der Artikelnummer können optional Untereinheiten in folgender Reihenfolge 
 | Absatz | `Absatz`, `Abs.`, `Absätze` (Plural); Nummern durch `,`, `und`, `oder` getrennt oder als Bereich mit `bis` (z. B. `Absatz 1 bis 3, 5 und 7 bis 9` oder `Absatz 2 oder 3`); kann direkt mit `, Unterabsatz …` bzw. `, Unterabsätze …` fortgesetzt werden (z. B. `Absatz 1, Unterabsätze 2 bis 8`) |
 | Unterabsatz | `Unterabsatz`, `Unterabsätze` (Plural), `UA`; Nummern/Bereiche wie bei Absatz |
 | Satz | `Satz`, `S.` |
+| Alternative | `Alternative`, `Alt.`; numerisch (z. B. `Satz 2 Alt. 2`) |
 | Nummer | `Nummer`, `Nr.` |
-| Buchstabe | `Buchstabe`, `Buchstaben` (Plural), `Buchst.`, `lit. a)`; mehrere Buchstaben als Liste (`Buchstabe a, b oder c`, `Buchstaben a b und c`) oder mit wiederholtem `Buchstabe`/`Buchstaben` (`Buchstabe b und Buchstabe d`); optional mit Zusatz `erste`/`zweite Alternative` oder `Variante` (z. B. `Buchstabe b erste Alternative`) |
+| Buchstabe | `Buchstabe`, `Buchstaben` (Plural), `Buchst.`, `lit. a)`, oder Kurzform `c)` (einzelner Kleinbuchstabe mit schließender Klammer, z. B. nach `Nr.`); mehrere Buchstaben als Liste (`Buchstabe a, b oder c`, `Buchstaben a b und c`) oder mit wiederholtem `Buchstabe`/`Buchstaben` (`Buchstabe b und Buchstabe d`); optional mit Zusatz `erste`/`zweite Alternative` oder `Variante` (z. B. `Buchstabe b erste Alternative`) |
 
 Alle Untereinheiten sind optional und beeinflussen nur den Linktext, nicht das Linkziel.
 
@@ -65,6 +66,8 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | `Art. 1 f. AufnahmeRL` | Ein Link (f. beeinflusst nur den Linktext) |
 | `Art. 7 Abs. 1 AMMVO` | Ein Link auf Art. 7 |
 | `Art. 7 Abs. 2 Nr. 3 lit. b) AMMVO` | Ein Link auf Art. 7 |
+| `Art. 46 Abs. 2 Satz 2 Alt. 2 AMMVO` | Ein Link auf Art. 46 |
+| `Art. 2 Nr. 17 c) AMMVO` | Ein Link auf Art. 2 |
 | `Artikel 42 Absätze 1 und 3 AVVO` | Ein Link auf Art. 42 |
 | `Art. 42 Absatz 3 Buchstabe a, b oder c AVVO` | Ein Link auf Art. 42 |
 | `Artikel 39 Absatz 3 der Verordnung (EU) 2024/1348` | Ein Link auf Art. 39 |

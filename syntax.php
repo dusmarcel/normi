@@ -200,11 +200,12 @@ class syntax_plugin_normi extends SyntaxPlugin
         $buchstabeLetter = '[a-z](?![a-zäöüß])' . $buchstabeQualifier;
         $buchstaben = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
             . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
-            . '|lit\. [a-z]\))';
-        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstaben . ')?';
+            . '|lit\. [a-z]\)|[a-z]\))';
+        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Alternative|Alt\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstaben . ')?';
         $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
             . '(?: (?:Satz|S\.) [0-9]+)?'
+            . '(?: (?:Alternative|Alt\.) [0-9]+)?'
             . '(?: (?:Nummer|Nr\.) [0-9]+)?'
             . '(?:,? ' . $buchstaben . ')?'
             . '(?: und (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
