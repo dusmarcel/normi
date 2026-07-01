@@ -206,11 +206,13 @@ class syntax_plugin_normi extends SyntaxPlugin
         $buchstabenSimple = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
             . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
             . '|lit\. [a-z]\))';
-        // Simplified subParts for the regulation-first pattern. Uses buchstabenSimple (one inner *-group)
-        // rather than buchstaben (two *-groups) so that the one outer *-loop in the Lexer pattern
-        // produces at most one level of nested repetition — safe for PCRE's compiled-size limit.
-        $subPartsSimple = '(?:(?: (?:Absatz|Abs\.) [0-9]+[a-z]?)?(?: (?:Unterabsatz|Unterabsätze|UA) [0-9]+)?'
-            . '(?: (?:Satz|S\.) [0-9]+)?(?: (?:Alternative|Alt\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?)';
+        // Flat subParts for the "insbesondere auf" Lexer pattern: purely sequential optional groups,
+        // no inner repetition at all, so the outer article-list loop stays linear and cannot push
+        // the combined master regex over PCRE's internal compiled-size limit.
+        // Matches one buchstabe only (no multi-letter list) — sufficient for preamble citations.
+        $subPartsFlat = '(?:(?: (?:Absatz|Abs\.) [0-9]+[a-z]?)?(?: (?:Unterabsatz|Unterabsätze|UA) [0-9]+)?'
+            . '(?: (?:Satz|S\.) [0-9]+)?(?: (?:Alternative|Alt\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?'
+            . '(?:,? (?:(?:Buchstabe|Buchstaben|Buchst\.) [a-z](?![a-z])|lit\. [a-z]\)|[a-z]\)))?';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
         $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
@@ -322,13 +324,14 @@ class syntax_plugin_normi extends SyntaxPlugin
             'plugin_normi'
         );
 
-        // Regulation-first: "AEUV, insbesondere auf Artikel 77 Absatz 2 und Artikel 79 Absatz 2 Buchstabe c"
-        // Registered before the standalone regulation pattern so this longer match wins when the
-        // "insbesondere/namentlich" connector is present; the standalone pattern still fires when the
-        // regulation appears alone (without the connector).
-        $regFirstItem = '(?:Artikel|Art\.) [0-9]+[a-z]?' . $subPartsSimple;
+        // Regulation-first: "..., insbesondere auf Artikel 77 Absatz 2 und Artikel 79 ..."
+        // Matches the connector+article-list part only — the preceding standalone regulation link
+        // (already rendered) is recovered in render() via $lastLinkedRegulation. Using $subPartsFlat
+        // (no inner repetition groups) keeps this outer article-list loop strictly linear so the
+        // combined master regex stays well within PCRE's internal compiled-size limit.
+        $regFirstItem = '(?:Artikel|Art\.) [0-9]+[a-z]?' . $subPartsFlat;
         $this->Lexer->addSpecialPattern(
-            '!?(?:' . $synonymPattern . '|' . $euPattern . ')[,;]? (?:insbesondere|namentlich)(?: auf)? (?:den |die |das )?'
+            '!?(?:insbesondere|namentlich)(?: auf)? (?:den |die |das )?'
             . $regFirstItem . '(?:(?:, (?:und )?| und )' . $regFirstItem . ')*',
             $mode,
             'plugin_normi'
@@ -359,36 +362,30 @@ class syntax_plugin_normi extends SyntaxPlugin
 
     private function parseMatch(string $match): array
     {
-        // Regulation-first: "AEUV, insbesondere auf Artikel 77 Absatz 2 und Artikel 79 Absatz 2 Buchstabe c"
-        // The regulation name precedes the article list, connected by "insbesondere" or "namentlich".
-        if (!empty($this->lexerSynonymPattern)) {
-            if (preg_match('/^((?:' . $this->lexerSynonymPattern . '|' . $this->lexerEuPattern . '))[,;]? (?:insbesondere|namentlich)(?: auf)? (?:den |die |das )?((?:Artikel|Art\.) .+)$/', $match, $rm)) {
-                $regSlug = $this->resolveRegulation($rm[1]);
-                if ($regSlug !== null) {
-                    $regPrefix     = $rm[1];
-                    $articlesText  = $rm[2];
-                    $connectorPhrase = substr($match, strlen($regPrefix), strlen($match) - strlen($regPrefix) - strlen($articlesText));
-                    $sepPat        = '/(?:, (?:und )?| und )(?=(?:Artikel|Art\.) [0-9])/';
-                    $artItems      = preg_split($sepPat, $articlesText);
-                    preg_match_all($sepPat, $articlesText, $connMatches);
-                    $parsedItems = [];
-                    foreach ($artItems as $itemText) {
-                        if (preg_match('/^(?:Artikel|Art\.) ([0-9]+[a-z]?)/', $itemText, $am)) {
-                            $parsedItems[] = ['text' => $itemText, 'article' => strtolower($am[1]), 'article_to' => null];
-                        }
-                    }
-                    if (!empty($parsedItems)) {
-                        return [
-                            'match'               => $match,
-                            'reg_first'           => true,
-                            'reg_first_prefix'    => $regPrefix,
-                            'reg_first_connector' => $connectorPhrase,
-                            'compound'            => $parsedItems,
-                            'connectors'          => $connMatches[0],
-                            'regulation'          => $regSlug,
-                        ];
-                    }
+        // Regulation-first connector: "insbesondere/namentlich auf Artikel 77 Absatz 2 und Artikel 79 ..."
+        // The connector+article-list is matched without the preceding regulation name (which was already
+        // rendered as a standalone link). render() recovers the regulation from $lastLinkedRegulation.
+        if (preg_match('/^((?:insbesondere|namentlich)(?: auf)? (?:den |die |das )?)((?:Artikel|Art\.) .+)$/', $match, $rm)) {
+            $connectorText = $rm[1];
+            $articlesText  = $rm[2];
+            $sepPat = '/(?:, (?:und )?| und )(?=(?:Artikel|Art\.) [0-9])/';
+            $artItems = preg_split($sepPat, $articlesText);
+            preg_match_all($sepPat, $articlesText, $connMatches);
+            $parsedItems = [];
+            foreach ($artItems as $itemText) {
+                if (preg_match('/^(?:Artikel|Art\.) ([0-9]+[a-z]?)/', $itemText, $am)) {
+                    $parsedItems[] = ['text' => $itemText, 'article' => strtolower($am[1]), 'article_to' => null];
                 }
+            }
+            if (!empty($parsedItems)) {
+                return [
+                    'match'               => $match,
+                    'reg_first'           => true,
+                    'reg_first_connector' => $connectorText,
+                    'compound'            => $parsedItems,
+                    'connectors'          => $connMatches[0],
+                    'regulation'          => '__preceding__',
+                ];
             }
         }
 
@@ -650,6 +647,9 @@ class syntax_plugin_normi extends SyntaxPlugin
     /** false = not yet resolved, null = not found, string = article number */
     private $resolvedCurrentArticle = false;
 
+    /** Slug of the most recently rendered standalone regulation link; used to resolve "__preceding__". */
+    private $lastLinkedRegulation = null;
+
     private function resolveCurrentRegulation(): ?string
     {
         if ($this->resolvedCurrentRegulation !== false) {
@@ -745,15 +745,18 @@ class syntax_plugin_normi extends SyntaxPlugin
             }
         }
 
+        if ($regulation === '__preceding__') {
+            // Resolve from the regulation rendered just before this "insbesondere/namentlich" clause.
+            $regulation = $this->lastLinkedRegulation ?? $this->resolveCurrentRegulation();
+            if ($regulation === null) {
+                $renderer->doc .= hsc($data['match']);
+                return true;
+            }
+        }
+
         if (isset($data['compound'])) {
             if (isset($data['reg_first'])) {
-                // Output regulation name as a link to its start page, then the connector phrase
-                $regStartPage = self::START_PAGES[$regulation] ?? null;
-                if ($regStartPage !== null) {
-                    $renderer->internallink($regStartPage, $data['reg_first_prefix']);
-                } else {
-                    $renderer->doc .= hsc($data['reg_first_prefix']);
-                }
+                // Output the connector phrase ("insbesondere auf ") as plain text before the article links.
                 $renderer->doc .= hsc($data['reg_first_connector']);
             }
             foreach ($data['compound'] as $i => $item) {
@@ -824,6 +827,8 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         if ($article === null) {
             $pageId = self::START_PAGES[$regulation];
+            // Track so the following "insbesondere/namentlich" clause can resolve the regulation.
+            $this->lastLinkedRegulation = $regulation;
         } else {
             $pageId = 'art._' . $article . '_' . $regulation;
         }
