@@ -473,7 +473,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:' . $this->lexerSubPartsPattern . ')? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Unterabsätze|Satz|S\.|Nummer|Nr\.|Buchstabe|Buchstaben|lit\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:' . $this->lexerSubPartsPattern . ')? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Unterabsätze|Satz|S\.|Nummer|Nr\.|Buchstabe|Buchstaben|lit\.|Alternative|Alt\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
