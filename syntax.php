@@ -84,7 +84,9 @@ class syntax_plugin_normi extends SyntaxPlugin
             'Rückführungsrichtlinie', 'RückführungsRL',
         ],
         'aeuv' => [
-            'Vertrag über die Arbeitsweise der Europäischen Union', 'AEUV',
+            'Vertrag über die Arbeitsweise der Europäischen Union',
+            'Vertrags über die Arbeitsweise der Europäischen Union',
+            'AEUV',
         ],
         'aufenthaltsgesetz' => [
             'Aufenthaltsgesetzes', 'Aufenthaltsgesetz', 'AufenthG',
