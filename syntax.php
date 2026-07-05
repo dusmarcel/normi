@@ -280,6 +280,13 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         // Bare "Artikel 25 bis 28 und 34" / "Artikel 25 bis 28" (no explicit law — falls back to the current page's regulation)
         $artBisListInner = '[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*';
+        // artBisList with explicit regulation: "Artikeln 20 bis 26 und 28 bis 35 der Verordnung (EU) 2024/1347"
+        // Must be registered before the bare artBisList so the regulation suffix is consumed in one token.
+        $this->Lexer->addSpecialPattern(
+            '!?(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            $mode,
+            'plugin_normi'
+        );
         $this->Lexer->addSpecialPattern(
             '!?(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner,
             $mode,
@@ -377,6 +384,9 @@ class syntax_plugin_normi extends SyntaxPlugin
                                     $parsedItems[] = ['text' => $displayText, 'article' => strtolower($bm[1]), 'article_to' => strtolower($bm[2])];
                                 } elseif (preg_match('/(?:Art\.|Artikel|Artikeln|des Artikels) ([0-9]+[a-z]?)/', $itemText, $nm)) {
                                     $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
+                                } elseif (preg_match('/^([0-9]+[a-z]?) bis ([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                    // Bare-digit range (e.g. "28 bis 35" as a continuation of "Artikeln 20 bis 26 und …")
+                                    $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => strtolower($nm[2])];
                                 } elseif (preg_match('/^([0-9]+[a-z]?)/', $itemText, $nm)) {
                                     // Bare-digit item (no repeated "Artikel" prefix, e.g. "79 Absatz 3")
                                     $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
@@ -743,7 +753,8 @@ class syntax_plugin_normi extends SyntaxPlugin
                     $renderer->doc .= hsc($data['connectors'][$i - 1]);
                 }
                 if ($item['article_to'] !== null
-                    && preg_match('/^((?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm)) {
+                    && (preg_match('/^((?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm)
+                        || preg_match('/^([0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm))) {
                     $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $bm[1]);
                     $renderer->doc .= ' bis ';
                     $renderer->internallink('art._' . $item['article_to'] . '_' . $regulation, $bm[2]);
