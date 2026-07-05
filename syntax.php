@@ -266,8 +266,10 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         // Also handles "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348": the trailing
         // $subParts (optional) lets the LAST item carry Absatz/Unterabsatz/… before the regulation.
+        // The optional (?: bis N)? in each slot also covers "Artikeln 20 bis 26 und 28 bis 35 der …"
+        // without a new Lexer alternation (avoids pushing the compiled master regex over PCRE's size limit).
         $this->Lexer->addSpecialPattern(
-            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)+'  . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -280,13 +282,6 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         // Bare "Artikel 25 bis 28 und 34" / "Artikel 25 bis 28" (no explicit law — falls back to the current page's regulation)
         $artBisListInner = '[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*';
-        // artBisList with explicit regulation: "Artikeln 20 bis 26 und 28 bis 35 der Verordnung (EU) 2024/1347"
-        // Must be registered before the bare artBisList so the regulation suffix is consumed in one token.
-        $this->Lexer->addSpecialPattern(
-            '!?(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
-            $mode,
-            'plugin_normi'
-        );
         $this->Lexer->addSpecialPattern(
             '!?(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner,
             $mode,
