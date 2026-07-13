@@ -598,7 +598,20 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
 
         $slug = $this->resolveRegulation($headerText);
-        return $slug === '__current__' ? null : $slug;
+        if ($slug !== null) {
+            return $slug === '__current__' ? null : $slug;
+        }
+        // Header looks like an EU-law citation but isn't mapped to a wiki page.
+        // Signal "suppress" so bare article references in this column are treated as plain text.
+        if (preg_match(
+            '/^(?:Verordnung|Richtlinie) \(E[UG]\) (?:Nr\. )?[0-9]'
+            . '|^Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?$'
+            . '|^\(EU\) (?:Nr\. )?[0-9]/',
+            $headerText
+        )) {
+            return '__suppress__';
+        }
+        return null;
     }
 
     /**
@@ -718,6 +731,10 @@ class syntax_plugin_normi extends SyntaxPlugin
             // In a table, an unspecified regulation may be implied by the first-row
             // header of the same column (e.g. "^ Richtlinie 2013/33/EU ^ ... ^").
             $tableRegulation = $this->resolveTableColumnRegulation($renderer);
+            if ($tableRegulation === '__suppress__') {
+                $renderer->doc .= hsc($data['match']);
+                return true;
+            }
             if ($tableRegulation !== null) {
                 $regulation = $tableRegulation;
             } else {
