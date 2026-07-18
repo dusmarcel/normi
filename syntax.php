@@ -201,12 +201,12 @@ class syntax_plugin_normi extends SyntaxPlugin
         // (?![a-zäöüß]) ensures the letter is a standalone token, not the start of a following word (e.g. "der")
         $buchstabeLetter = '[a-z](?![a-zäöüß])' . $buchstabeQualifier;
         $buchstaben = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
-            . '(?:(?: bis ' . $buchstabeLetter . ')?(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*)'
+            . '(?:(?: bis [a-z](?![a-zäöüß]))?(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*)'
             . '|lit\. [a-z]\)|[a-z]\))';
         // Simpler buchstaben variant for $extSubParts — keeps the repeated-group pattern compact to
         // avoid pushing the combined Lexer master regex over PCRE's internal compiled-size limit.
         $buchstabenSimple = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
-            . '(?:(?: bis ' . $buchstabeLetter . ')?(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*)'
+            . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
             . '|lit\. [a-z]\))';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
         $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
