@@ -196,17 +196,21 @@ class syntax_plugin_normi extends SyntaxPlugin
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?|\(EU\) (?:Nr\. )?[0-9]+\/[0-9]+)';
 
         $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
-        // Optional "erste/zweite Alternative" or "Variante" qualifier after a Buchstabe letter
+        // Optional "erste/zweite Alternative" or "Variante" qualifier on a Buchstabe reference.
+        // Placed once at the END of the buchstaben group (not per-letter) to avoid duplicating
+        // ~90 chars of PCRE per letter occurrence and stay within PCRE's compiled-size limit.
         $buchstabeQualifier = '(?: (?:erste|zweite|dritte|vierte|fünfte|sechste|siebte|achte|neunte|zehnte) (?:Alternative|Variante))?';
-        // (?![a-zäöüß]) ensures the letter is a standalone token, not the start of a following word (e.g. "der")
-        $buchstabeLetter = '[a-z](?![a-zäöüß])' . $buchstabeQualifier;
+        // (?![a-zäöüß]) ensures the letter is a standalone token, not the start of a word (e.g. "der")
+        $buchstabeLetter = '[a-z](?![a-zäöüß])';
         $buchstaben = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
-            . '(?:(?: bis [a-z](?![a-zäöüß]))?(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*)'
+            . '(?:(?: bis ' . $buchstabeLetter . ')?(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*)'
+            . $buchstabeQualifier
             . '|lit\. [a-z]\)|[a-z]\))';
         // Simpler buchstaben variant for $extSubParts — keeps the repeated-group pattern compact to
         // avoid pushing the combined Lexer master regex over PCRE's internal compiled-size limit.
         $buchstabenSimple = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
             . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
+            . $buchstabeQualifier
             . '|lit\. [a-z]\))';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
         $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
