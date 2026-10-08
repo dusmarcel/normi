@@ -11,7 +11,7 @@ use dokuwiki\Extension\SyntaxPlugin;
 class syntax_plugin_normi extends SyntaxPlugin
 {
     // Slugs of national laws (use § not Artikel — bare Artikel refs on these pages are suppressed)
-    const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz', 'beschäftigungsverordnung', 'aufenthaltsverordnung', 'staatsangehörigkeitsgesetz', 'verwaltungsgerichtsordnung', 'freizügigkeitsgesetz-eu'];
+    const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz', 'beschäftigungsverordnung', 'aufenthaltsverordnung', 'staatsangehörigkeitsgesetz', 'verwaltungsgerichtsordnung', 'freizügigkeitsgesetz-eu', 'ukraine-aufenthalts-übergangsverordnung'];
 
     /** Cached synonym/EU patterns for use in handle() (set in connectTo) */
     private $lexerSynonymPattern = '';
@@ -109,6 +109,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         'freizügigkeitsgesetz-eu' => [
             'Freizügigkeitsgesetz/EU', 'FreizügG/EU',
         ],
+        'ukraine-aufenthalts-übergangsverordnung' => [
+            'Ukraine-Aufenthalts-Übergangsverordnung', 'UkraineAufenthÜV',
+        ],
         '__current__' => [
             'vorliegenden Verordnung', 'vorliegenden Richtlinie', 'vorliegenden Gesetzes',
             'vorliegende Verordnung', 'vorliegende Richtlinie',
@@ -143,6 +146,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         'staatsangehörigkeitsgesetz'      => 'staatsangehörigkeitsgesetz',
         'verwaltungsgerichtsordnung'      => 'verwaltungsgerichtsordnung',
         'freizügigkeitsgesetz-eu'         => 'freizügigkeitsgesetz-eu',
+        'ukraine-aufenthalts-übergangsverordnung' => 'ukraine-aufenthalts-übergangsverordnung',
     ];
 
     // EU regulation/directive number => canonical page slug

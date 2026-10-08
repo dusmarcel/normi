@@ -144,6 +144,7 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 | Staatsangehörigkeitsgesetz | StAG |
 | Verwaltungsgerichtsordnung | VwGO |
 | Freizügigkeitsgesetz/EU | FreizügG/EU |
+| Ukraine-Aufenthalts-Übergangsverordnung | UkraineAufenthÜV |
 
 **Beispiele:**
 
