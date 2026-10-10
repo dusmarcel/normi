@@ -12,7 +12,28 @@
       "Bash(python /tmp/test_section.py)",
       "Bash(rm /tmp/test_section.py)",
       "Bash(python /tmp/test_full.py)",
-      "Bash(rm /tmp/test_full.py)"
+      "Bash(rm /tmp/test_full.py)",
+      "Bash(curl -s \"http://127.0.0.1:8099/lib/exe/css.php?t=dokuwiki&f=print\")",
+      "Bash(curl -s \"http://127.0.0.1:8099/lib/exe/css.php?t=dokuwiki\")",
+      "Bash(grep -o \"@media print{.\\\\{0,60\\\\}navinormi.\\\\{0,30\\\\}\")",
+      "Bash(xxd)",
+      "Bash(gh auth *)",
+      "Bash(git -C ../navinormi config user.name)",
+      "Bash(git config *)",
+      "Bash(command -v gh)",
+      "Bash(git -C /home/marcel/projects/navinormi push -u origin master)",
+      "Bash(git -C /home/marcel/projects/normi push origin master)",
+      "Bash(git -C /home/marcel/projects/navinormi push -u origin main)",
+      "Bash(mkdir -p /tmp/claude-1000/-home-marcel-projects-normi/e46507df-50e5-499c-8cd1-bdf0fc839fc5/scratchpad/live)",
+      "Bash(curl -s -o page.html https://wiki.aufentha.lt/art._2_asylgesetz)",
+      "Bash(php -r '$h=file_get_contents\\(\"page.html\"\\); preg_match\\(\"~<nav class=\\\\\"plugin_navinormi.*?</nav>~s\",$h,$m\\); echo $m[0] ?? \"keine nav\", \"\\\\n\"; preg_match_all\\(\"~<link[^>]+stylesheet[^>]*>~\",$h,$l\\); print_r\\($l[0]\\); preg_match\\(\"~<body[^>]*>~\",$h,$b\\); echo $b[0],\"\\\\n\";')",
+      "Bash(curl -s -o css.css \"https://wiki.aufentha.lt/lib/exe/css.php?t=dokuwiki&tseed=9acb0ecca407e3ffc0e0a81f695d849a\")",
+      "Bash(grep -o \".\\\\{0,80\\\\}nav{[^}]*}\\\\|nav [a-z]*{[^}]*}\" css.css)",
+      "Bash(grep -o \".\\\\{0,200\\\\}plugin_navinormi{display:none\" css.css)",
+      "Bash(php -l helper.php)"
+    ],
+    "additionalDirectories": [
+      "/home/marcel/projects/navinormi"
     ]
   }
 }
