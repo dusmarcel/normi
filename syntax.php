@@ -59,6 +59,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         'euaa-verordnung' => [
             'EUAA-Verordnung', 'EUAA-VO',
         ],
+        'rückführungsverordnung' => [
+            'Rückführungsverordnung', 'RückführungsVO',
+        ],
         'aufnahmerichtlinie-2013' => [
             'Aufnahmerichtlinie 2013', 'AufnahmeRL 2013',
         ],
@@ -131,6 +134,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         'eurodac-verordnung'              => 'verordnung_eu_2024_1358',
         'krisenverordnung'                => 'verordnung_eu_2024_1359',
         'euaa-verordnung'                 => 'verordnung_eu_2021_2303',
+        'rückführungsverordnung'          => 'verordnung_eu_2026_2280',
         'aufnahmerichtlinie-2013'         => 'richtlinie_2013_33_eu',
         'qualifikationsrichtlinie'        => 'richtlinie_2011_95_eu',
         'asylverfahrensrichtlinie'        => 'richtlinie_2013_32_eu',
@@ -162,6 +166,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         '2024/1358' => 'eurodac-verordnung',
         '2024/1359' => 'krisenverordnung',
         '2021/2303' => 'euaa-verordnung',
+        '2026/2280' => 'rückführungsverordnung',
         // Old regulation format: (EU) Nr. NNNN/YYYY
         '604/2013'  => 'dublin-iii-verordnung',
         '603/2013'  => 'eurodac-verordnung-2013',

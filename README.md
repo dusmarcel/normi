@@ -109,6 +109,12 @@ Auch ein nacktes `(EU) 2024/1347` ohne vorangestelltes „Verordnung"/„Richtli
 2. (EU) 2024/1348, …
 ```
 
+### Weitere Rechtsakte
+
+| Rechtsakt | Synonyme |
+|---|---|
+| Rückführungsverordnung (EU) 2026/2280 | RückführungsVO |
+
 ### Ältere Rechtsakte (GEAS-System bis 2024)
 
 | Rechtsakt | Synonyme |
