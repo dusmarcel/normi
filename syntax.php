@@ -225,16 +225,21 @@ class syntax_plugin_normi extends SyntaxPlugin
             . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
             . $buchstabeQualifier
             . '|lit\. [a-z]\))';
-        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) ' . $absatzNums . ')?(?:,? ' . $buchstabenSimple . ')?';
-        $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
+        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
+        $buildSubParts = fn(string $nummer) => '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
             . '(?: (?:Satz|S\.) [0-9]+)?'
             . '(?: (?:Alternative|Alt\.) [0-9]+)?'
-            // Nummer may list several numbers like Absatz: "Nummer 1, 3 und 4", "Nr. 1 bis 3"
-            . '(?: (?:Nummer|Nr\.) ' . $absatzNums . ')?'
+            . '(?: (?:Nummer|Nr\.) ' . $nummer . ')?'
             . '(?:,? ' . $buchstaben . ')?'
             . '(?: (?:und|oder|sowie) (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
-        $subParts = '(?:' . $subPartsInner . ')?';
+        $subPartsInner = $buildSubParts('[0-9]+');
+        // Variant with a Nummer list ("Nummer 1, 3 und 4", "Nr. 1 bis 3"), used only by the single-item
+        // patterns: in the compound patterns subPartsInner occurs repeatedly, and a list there pushes
+        // the combined Lexer master regex over PCRE's compiled-size limit
+        $subPartsListInner = $buildSubParts('[0-9]+(?:(?:,| und| oder| sowie| bis) [0-9]+)*');
+        $subParts     = '(?:' . $subPartsInner . ')?';
+        $subPartsList = '(?:' . $subPartsListInner . ')?';
 
         $nationalSynonyms = [];
         foreach (self::NATIONAL_LAW_SLUGS as $slug) {
@@ -247,7 +252,7 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         $this->lexerSynonymPattern  = $synonymPattern;
         $this->lexerEuPattern       = $euPattern;
-        $this->lexerSubPartsPattern = $subPartsInner;
+        $this->lexerSubPartsPattern = $subPartsListInner;
         $this->lexerNationalPattern = $nationalPattern;
 
         // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie 2008/115/EG"
@@ -260,18 +265,13 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+ ' . $artPfx . '(?:' . $nationalPattern . ')',
+            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subPartsList . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
 
-        $this->Lexer->addSpecialPattern(
-            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
-            $mode,
-            'plugin_normi'
-        );
-
-        // Compound §-list without repeated "§": "§§ 2 Abs. 3, 5 Abs. 1 Nr. 1 AufenthG"
+        // Compound §-list without repeated "§": "§§ 2 Abs. 3, 5 Abs. 1 Nr. 1 AufenthG", also plain
+        // "§§ 25, 26 AufenthG" (no separate pattern for those, to stay within PCRE's size limit)
         // (each item may carry its own Absatz/Unterabsatz/Satz/Nr./Buchstabe; not possessive so the
         // greedy Absatz-number list inside subPartsInner can backtrack to find the correct item split)
         $sectionItemPat = '(?:(?:des )?§(?:§)? )?[0-9]+[a-z]?(?:' . $subPartsInner . ')?';
@@ -293,7 +293,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subParts . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
+            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subPartsList . ' ' . $artPfx . '(?:' . $synonymPattern . '|' . $euPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -315,7 +315,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         $this->Lexer->addSpecialPattern(
             // Possessive [0-9]++[a-z]?+ so the trailing lookaheads can't be satisfied by backtracking
             // into a shorter article number (e.g. matching just "2" out of "25 bis 28")
-            '!?(?:Art\.|Artikel|des Artikels) [0-9]++[a-z]?+(?:' . $subPartsInner . ')?+(?!, [0-9])(?! bis [0-9])',
+            '!?(?:Art\.|Artikel|des Artikels) [0-9]++[a-z]?+(?:' . $subPartsListInner . ')?+(?!, [0-9])(?! bis [0-9])',
             $mode,
             'plugin_normi'
         );
@@ -334,7 +334,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         $this->Lexer->addSpecialPattern(
-            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder| sowie) [0-9])' . $subParts,
+            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder| sowie) [0-9])' . $subPartsList,
             $mode,
             'plugin_normi'
         );
