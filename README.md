@@ -145,6 +145,7 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 |---|---|
 | Aufenthaltsgesetz | AufenthG |
 | Asylgesetz | AsylG |
+| Asylbewerberleistungsgesetz | AsylbLG |
 | Beschäftigungsverordnung | BeschV |
 | Aufenthaltsverordnung | AufenthV |
 | Staatsangehörigkeitsgesetz | StAG |
@@ -158,6 +159,7 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 |---|---|
 | `§ 25 AufenthG` | Ein Link auf § 25 |
 | `§ 25 Abs. 1 AufenthG` | Ein Link auf § 25 |
+| `§ 3 AsylbLG` | Ein Link auf § 3 |
 | `§§ 25, 26 AufenthG` | Zwei Links |
 | `§§ 25 bis 27 AufenthG` | Zwei Links (§ 25 und § 27), „bis" als Klartext |
 | `des § 3 Abs. 1 AufenthG` | Ein Link auf § 3 (Genitiv-Präfix) |

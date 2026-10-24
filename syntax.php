@@ -11,7 +11,7 @@ use dokuwiki\Extension\SyntaxPlugin;
 class syntax_plugin_normi extends SyntaxPlugin
 {
     // Slugs of national laws (use § not Artikel — bare Artikel refs on these pages are suppressed)
-    const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz', 'beschäftigungsverordnung', 'aufenthaltsverordnung', 'staatsangehörigkeitsgesetz', 'verwaltungsgerichtsordnung', 'freizügigkeitsgesetz-eu', 'ukraine-aufenthalts-übergangsverordnung'];
+    const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz', 'asylbewerberleistungsgesetz', 'beschäftigungsverordnung', 'aufenthaltsverordnung', 'staatsangehörigkeitsgesetz', 'verwaltungsgerichtsordnung', 'freizügigkeitsgesetz-eu', 'ukraine-aufenthalts-übergangsverordnung'];
 
     /** Cached synonym/EU patterns for use in handle() (set in connectTo) */
     private $lexerSynonymPattern = '';
@@ -97,6 +97,9 @@ class syntax_plugin_normi extends SyntaxPlugin
         'asylgesetz' => [
             'Asylgesetzes', 'Asylgesetz', 'AsylG',
         ],
+        'asylbewerberleistungsgesetz' => [
+            'Asylbewerberleistungsgesetzes', 'Asylbewerberleistungsgesetz', 'AsylbLG',
+        ],
         'beschäftigungsverordnung' => [
             'Beschäftigungsverordnung', 'BeschV',
         ],
@@ -145,6 +148,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         'aeuv'                            => 'aeuv',
         'aufenthaltsgesetz'               => 'aufenthaltsgesetz',
         'asylgesetz'                      => 'asylgesetz',
+        'asylbewerberleistungsgesetz'     => 'asylbewerberleistungsgesetz',
         'beschäftigungsverordnung'        => 'beschäftigungsverordnung',
         'aufenthaltsverordnung'           => 'aufenthaltsverordnung',
         'staatsangehörigkeitsgesetz'      => 'staatsangehörigkeitsgesetz',
