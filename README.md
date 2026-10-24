@@ -169,6 +169,7 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 | `§ 1 Absatz 1 Nummer 1, 3 und 4 AsylbLG` | Ein Link auf § 1 (Nummern-Liste, keine weiteren Paragraphen) |
 | `§ 1 Absatz 1 Nummer 1, 3 und 4` | Ein Link auf § 1 (Norm aus Seitentitel) |
 | `§ 68 Absatz 1 Satz 1 oder § 68a Absatz 1 Satz 1 des Asylgesetzes` | Zwei Links (§ 68 und § 68a AsylG) |
+| `§ 81 Absatz 5 in Verbindung mit Absatz 3 oder Absatz 4 des Aufenthaltsgesetzes` | Ein Link auf § 81 AufenthG (auch `i. V. m.`/`i.V.m.`) |
 | `§§ 16a bis 16c, 16e sowie 16f` | Vier Links (§ 16a, 16c, 16e und 16f; Norm aus Seitentitel) |
 | `§ 25 Abs. 3` | Ein Link (Norm aus Seitentitel) |
 | `§§ 16b, 16c, 16e und 17` | Vier Links (Norm aus Seitentitel) |

@@ -226,18 +226,19 @@ class syntax_plugin_normi extends SyntaxPlugin
             . $buchstabeQualifier
             . '|lit\. [a-z]\))';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
-        $buildSubParts = fn(string $nummer) => '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
+        $buildSubParts = fn(string $nummer, string $connector) => '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
             . '(?: (?:Satz|S\.) [0-9]+)?'
             . '(?: (?:Alternative|Alt\.) [0-9]+)?'
             . '(?: (?:Nummer|Nr\.) ' . $nummer . ')?'
             . '(?:,? ' . $buchstaben . ')?'
-            . '(?: (?:und|oder|sowie) (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
-        $subPartsInner = $buildSubParts('[0-9]+');
-        // Variant with a Nummer list ("Nummer 1, 3 und 4", "Nr. 1 bis 3"), used only by the single-item
-        // patterns: in the compound patterns subPartsInner occurs repeatedly, and a list there pushes
-        // the combined Lexer master regex over PCRE's compiled-size limit
-        $subPartsListInner = $buildSubParts('[0-9]+(?:(?:,| und| oder| sowie| bis) [0-9]+)*');
+            . '(?: ' . $connector . ' (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
+        $subPartsInner = $buildSubParts('[0-9]+', '(?:und|oder|sowie)');
+        // Variant used only by the single-item patterns, with a Nummer list ("Nummer 1, 3 und 4",
+        // "Nr. 1 bis 3") and "in Verbindung mit"/"i. V. m." before a further Absatz ("§ 81 Absatz 5 in
+        // Verbindung mit Absatz 3 oder Absatz 4"): in the compound patterns subPartsInner occurs
+        // repeatedly, and these there push the combined Lexer master regex over PCRE's compiled-size limit
+        $subPartsListInner = $buildSubParts('[0-9]+(?:(?:,| und| oder| sowie| bis) [0-9]+)*', '(?:und|oder|sowie|in Verbindung mit|i\. ?V\. ?m\.)');
         $subParts     = '(?:' . $subPartsInner . ')?';
         $subPartsList = '(?:' . $subPartsListInner . ')?';
 
@@ -502,7 +503,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             ];
         }
 
-        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:' . $this->lexerSubPartsPattern . ')? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Unterabsätze|Satz|S\.|Nummer|Nr\.|Buchstabe|Buchstaben|lit\.|Alternative|Alt\.)\s|bis\s|und\s|oder\s|[0-9])(.+)$/', $match, $m)) {
+        if (preg_match('/^(?:Art\.|Artikel|des Artikels|(?:des )?§(?:§)?) ([0-9]+[a-z]?)(?: f{1,2}\.?| bis [0-9]+[a-z]?)?(?:' . $this->lexerSubPartsPattern . ')? (?:der |des |dem |die |den )?(?!(?:Absatz|Abs\.|Absätze|Unterabsatz|Unterabsätze|Satz|S\.|Nummer|Nr\.|Buchstabe|Buchstaben|lit\.|Alternative|Alt\.)\s|bis\s|und\s|oder\s|in Verbindung mit\s|i\. ?V\. ?m\.|[0-9])(.+)$/', $match, $m)) {
             return [
                 'match'      => $match,
                 'article'    => strtolower($m[1]),
