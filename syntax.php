@@ -431,7 +431,8 @@ class syntax_plugin_normi extends SyntaxPlugin
                     // branch below handle it as one cohesive reference.
                     $singleItemFullPat = '/^(?:(?:des )?§(?:§)? )?[0-9]+[a-z]?(?:' . $this->lexerSubPartsPattern . ')?$/';
                     if (!preg_match($singleItemFullPat, $itemsText)) {
-                        $sepPat = '/(?:,| und| oder| sowie) (?=[0-9])/';
+                        // Items may repeat "§": "§ 68 Absatz 1 Satz 1 oder § 68a Absatz 1 Satz 1 des Asylgesetzes"
+                        $sepPat = '/(?:,| und| oder| sowie) (?=(?:(?:des )?§(?:§)? )?[0-9])/';
                         $items = preg_split($sepPat, $itemsText);
                         if (count($items) >= 2) {
                             preg_match_all($sepPat, $itemsText, $connMatches);
