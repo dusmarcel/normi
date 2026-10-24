@@ -24,7 +24,7 @@ Nach der Artikelnummer können optional Untereinheiten in folgender Reihenfolge 
 | Unterabsatz | `Unterabsatz`, `Unterabsätze` (Plural), `UA`; Nummern/Bereiche wie bei Absatz |
 | Satz | `Satz`, `S.` |
 | Alternative | `Alternative`, `Alt.`; numerisch (z. B. `Satz 2 Alt. 2`) |
-| Nummer | `Nummer`, `Nr.` |
+| Nummer | `Nummer`, `Nr.`; Nummern/Bereiche wie bei Absatz (z. B. `Nummer 1, 3 und 4` oder `Nr. 1 bis 3`) |
 | Buchstabe | `Buchstabe`, `Buchstaben` (Plural), `Buchst.`, `lit. a)`, oder Kurzform `c)` (einzelner Kleinbuchstabe mit schließender Klammer, z. B. nach `Nr.`); mehrere Buchstaben als Liste (`Buchstabe a, b oder c`, `Buchstaben a b und c`) oder mit wiederholtem `Buchstabe`/`Buchstaben` (`Buchstabe b und Buchstabe d`); optional mit Zusatz `erste`/`zweite Alternative` oder `Variante` (z. B. `Buchstabe b erste Alternative`) |
 
 Alle Untereinheiten sind optional und beeinflussen nur den Linktext, nicht das Linkziel.
@@ -166,6 +166,8 @@ Bei nationalen Gesetzen werden Paragraphen mit `§` (Singular) oder `§§` (Plur
 | `§ 26 Absatz 2 oder 3 des Asylgesetzes` | Ein Link auf § 26 |
 | `§ 60 Abs. 1 bis 3, 5 und 7 bis 9 AufenthG` | Ein Link auf § 60 |
 | `§ 60 Absatz 5 und 7 des Aufenthaltsgesetzes` | Ein Link auf § 60 (Absatz-Liste, kein zweiter Paragraph) |
+| `§ 1 Absatz 1 Nummer 1, 3 und 4 AsylbLG` | Ein Link auf § 1 (Nummern-Liste, keine weiteren Paragraphen) |
+| `§ 1 Absatz 1 Nummer 1, 3 und 4` | Ein Link auf § 1 (Norm aus Seitentitel) |
 | `§§ 16a bis 16c, 16e sowie 16f` | Vier Links (§ 16a, 16c, 16e und 16f; Norm aus Seitentitel) |
 | `§ 25 Abs. 3` | Ein Link (Norm aus Seitentitel) |
 | `§§ 16b, 16c, 16e und 17` | Vier Links (Norm aus Seitentitel) |

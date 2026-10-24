@@ -225,12 +225,13 @@ class syntax_plugin_normi extends SyntaxPlugin
             . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
             . $buchstabeQualifier
             . '|lit\. [a-z]\))';
-        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
+        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) ' . $absatzNums . ')?(?:,? ' . $buchstabenSimple . ')?';
         $subPartsInner = '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
             . '(?: (?:Satz|S\.) [0-9]+)?'
             . '(?: (?:Alternative|Alt\.) [0-9]+)?'
-            . '(?: (?:Nummer|Nr\.) [0-9]+)?'
+            // Nummer may list several numbers like Absatz: "Nummer 1, 3 und 4", "Nr. 1 bis 3"
+            . '(?: (?:Nummer|Nr\.) ' . $absatzNums . ')?'
             . '(?:,? ' . $buchstaben . ')?'
             . '(?: (?:und|oder|sowie) (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
         $subParts = '(?:' . $subPartsInner . ')?';
@@ -378,7 +379,10 @@ class syntax_plugin_normi extends SyntaxPlugin
                     // belongs to the Absatz-list, not a second Artikel. Skip and let the single-item
                     // branch below handle it as one cohesive reference.
                     $singleItemFullPat = '/^(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?' . $this->lexerSubPartsPattern . ')?$/';
-                    if (!preg_match($singleItemFullPat, $itemsText)) {
+                    // §-references are left to the §-branch below; otherwise "§ 1 Abs. 1 Nr. 1, 3 und 4 AsylbLG"
+                    // would be split here and lose its first item, which does not parse as an Artikel
+                    $isArticleList = preg_match('/^(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) /', $itemsText);
+                    if ($isArticleList && !preg_match($singleItemFullPat, $itemsText)) {
                         // Prefer splitting on "Artikel"-introducing separators (compound with repeated keyword);
                         // fall back to bare-digit lookahead for "Artikeln N und M Absatz K" constructs.
                         $sepPat = '/(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))/';
