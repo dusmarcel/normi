@@ -228,7 +228,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             . '(?: (?:Alternative|Alt\.) [0-9]+)?'
             . '(?: (?:Nummer|Nr\.) [0-9]+)?'
             . '(?:,? ' . $buchstaben . ')?'
-            . '(?: und (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
+            . '(?: (?:und|oder|sowie) (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
         $subParts = '(?:' . $subPartsInner . ')?';
 
         $nationalSynonyms = [];
