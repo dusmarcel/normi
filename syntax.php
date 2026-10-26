@@ -228,17 +228,21 @@ class syntax_plugin_normi extends SyntaxPlugin
             . $buchstabeQualifier
             . '|lit\. [a-z]\))';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
-        // $withNummerQualifier adds ~104 chars per call site (the qualifier regex itself is long)
-        // — default it off and opt in only where a sentence actually needs it (currently just the
-        // compound §-list item pattern below), since $buildSubParts' output is reused several times
-        // across the Lexer's patterns and that cost multiplies with each reuse (PCRE size limit).
-        $buildSubParts = fn(string $nummer, string $connector, bool $withNummerQualifier = false) => '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
+        // $withNummerQualifier adds ~104 chars per call site (the qualifier regex itself is long);
+        // $withSatzList/$withNummerList ~26 each — all default off and are opted into only where a
+        // sentence actually needs them (currently just the compound §-list item pattern below),
+        // since $buildSubParts' output is reused several times across the Lexer's patterns and
+        // that cost multiplies with each reuse (PCRE size limit).
+        $buildSubParts = fn(string $nummer, string $connector, bool $withNummerQualifier = false, bool $withSatzList = false, bool $withNummerList = false) => '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
-            . '(?: (?:Satz|S\.) [0-9]+)?'
+            // "Satz 6 und 7" — without this, a bare second Satz number is mistaken for the start
+            // of the next item in an outer compound list (e.g. linked to the wrong § entirely).
+            . '(?: (?:Satz|S\.) [0-9]+' . ($withSatzList ? '(?:(?: und| oder) [0-9]+)*' : '') . ')?'
             . '(?: (?:Alternative|Alt\.) [0-9]+)?'
             // The "erste/zweite Alternative"/"Variante" qualifier may directly follow a Nummer
             // with no Buchstabe in between (e.g. "Nummer 2 erste Alternative"), not just a Buchstabe.
-            . '(?: (?:Nummer|Nr\.) ' . $nummer . ')?' . ($withNummerQualifier ? $buchstabeQualifier : '')
+            // $withNummerList additionally covers "Nummer 4 und 8" for the same reason as Satz above.
+            . '(?: (?:Nummer|Nr\.) ' . $nummer . ($withNummerList ? '(?:(?: und| oder) [0-9]+)*' : '') . ')?' . ($withNummerQualifier ? $buchstabeQualifier : '')
             . '(?:,? ' . $buchstaben . ')?'
             // Bare comma is also accepted here (not just $connector) because the keyword
             // "Absatz|Abs." immediately follows, which disambiguates it from a comma that
@@ -296,7 +300,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         // git history). Lists like "Nummer 4 und 8" within one item therefore still split into a
         // (harmless, same-regulation) extra bare-number item; parseMatch()'s tokenizer shrinks a
         // greedy match if it swallows the next item's number.
-        $sectionItemSubParts = $buildSubParts('[0-9]+', '(?:und|oder|sowie)', true);
+        $sectionItemSubParts = $buildSubParts('[0-9]+', '(?:und|oder|sowie)', true, true, true);
         $sectionItemPat = '(?:(?:die |den )?(?:des )?§(?:§)? )?[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:' . $sectionItemSubParts . ')?';
         $sectionSep     = '(?:,| und| oder| sowie) ';
         $this->lexerSectionItemPattern = $sectionItemPat;
