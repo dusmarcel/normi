@@ -227,16 +227,18 @@ class syntax_plugin_normi extends SyntaxPlugin
             . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
             . $buchstabeQualifier
             . '|lit\. [a-z]\))';
-        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+(?:(?: und| oder) [0-9]+)*)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
-        $buildSubParts = fn(string $nummer, string $connector) => '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
+        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
+        // $withNummerQualifier adds ~104 chars per call site (the qualifier regex itself is long)
+        // — default it off and opt in only where a sentence actually needs it (currently just the
+        // compound §-list item pattern below), since $buildSubParts' output is reused several times
+        // across the Lexer's patterns and that cost multiplies with each reuse (PCRE size limit).
+        $buildSubParts = fn(string $nummer, string $connector, bool $withNummerQualifier = false) => '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
-            // Satz accepts a short "und/oder" list ("Satz 6 und 7") so the second number isn't
-            // mistaken for the start of the next item in an outer compound list.
-            . '(?: (?:Satz|S\.) [0-9]+(?:(?: und| oder) [0-9]+)*)?'
+            . '(?: (?:Satz|S\.) [0-9]+)?'
             . '(?: (?:Alternative|Alt\.) [0-9]+)?'
             // The "erste/zweite Alternative"/"Variante" qualifier may directly follow a Nummer
             // with no Buchstabe in between (e.g. "Nummer 2 erste Alternative"), not just a Buchstabe.
-            . '(?: (?:Nummer|Nr\.) ' . $nummer . ')?' . $buchstabeQualifier
+            . '(?: (?:Nummer|Nr\.) ' . $nummer . ')?' . ($withNummerQualifier ? $buchstabeQualifier : '')
             . '(?:,? ' . $buchstaben . ')?'
             // Bare comma is also accepted here (not just $connector) because the keyword
             // "Absatz|Abs." immediately follows, which disambiguates it from a comma that
@@ -253,10 +255,6 @@ class syntax_plugin_normi extends SyntaxPlugin
         $subPartsListInner = $buildSubParts('[0-9]+(?:(?:,| und| oder| sowie| bis) [0-9]+)*', '(?:und|oder|sowie|in Verbindung mit|i\. ?V\. ?m\.)');
         $subParts     = '(?:' . $subPartsInner . ')?';
         $subPartsList = '(?:' . $subPartsListInner . ')?';
-        // Lighter Nummer-list variant (no "bis"/"in Verbindung mit") for the compound §-list item
-        // pattern below, needed for "Absatz 1 Nummer 4 und 8" within one item of a longer §-chain
-        // without pulling in the heavier $subPartsListInner connector alternation (PCRE size limit).
-        $subPartsInnerNumList = $buildSubParts('[0-9]+(?:(?:,| und| oder| sowie) [0-9]+)*', '(?:und|oder|sowie)');
 
         $nationalSynonyms = [];
         foreach (self::NATIONAL_LAW_SLUGS as $slug) {
@@ -290,11 +288,16 @@ class syntax_plugin_normi extends SyntaxPlugin
         // Compound §-list without repeated "§": "§§ 2 Abs. 3, 5 Abs. 1 Nr. 1 AufenthG", also plain
         // "§§ 25, 26 AufenthG" (no separate pattern for those, to stay within PCRE's size limit).
         // Items may also be reintroduced with "die"/"den" ("die §§ 13, 14 Absatz 2") and carry a
-        // "bis" range ("§§ 85 bis 88"). (each item may carry its own Absatz/Unterabsatz/Satz/Nr./
-        // Buchstabe; not possessive so the greedy Absatz-number list inside subPartsInnerNumList
-        // can backtrack to find the correct item split — parseMatch()'s tokenizer additionally
-        // shrinks a greedy match if that backtracking still swallows the next item's lead number.)
-        $sectionItemPat = '(?:(?:die |den )?(?:des )?§(?:§)? )?[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:' . $subPartsInnerNumList . ')?';
+        // "bis" range ("§§ 85 bis 88"). Uses its own $buildSubParts call (not the shared
+        // $subPartsInner) so the Nummer-qualifier addition is paid for only here, where "Nummer 2
+        // erste Alternative" actually needs to appear within one item of a longer §-chain — this
+        // item pattern occurs twice in the compound below, and a heavier sub-pattern here
+        // previously pushed the combined Lexer master regex over PCRE's compiled-size limit (see
+        // git history). Lists like "Nummer 4 und 8" within one item therefore still split into a
+        // (harmless, same-regulation) extra bare-number item; parseMatch()'s tokenizer shrinks a
+        // greedy match if it swallows the next item's number.
+        $sectionItemSubParts = $buildSubParts('[0-9]+', '(?:und|oder|sowie)', true);
+        $sectionItemPat = '(?:(?:die |den )?(?:des )?§(?:§)? )?[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:' . $sectionItemSubParts . ')?';
         $sectionSep     = '(?:,| und| oder| sowie) ';
         $this->lexerSectionItemPattern = $sectionItemPat;
         $this->lexerSectionSepPattern  = $sectionSep;
