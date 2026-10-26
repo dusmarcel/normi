@@ -18,6 +18,8 @@ class syntax_plugin_normi extends SyntaxPlugin
     private $lexerEuPattern = '';
     private $lexerSubPartsPattern = '';
     private $lexerNationalPattern = '';
+    private $lexerSectionItemPattern = '';
+    private $lexerSectionSepPattern = '';
 
     // Canonical page slug => list of text synonyms
     const REGULATIONS = [
@@ -225,14 +227,24 @@ class syntax_plugin_normi extends SyntaxPlugin
             . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
             . $buchstabeQualifier
             . '|lit\. [a-z]\))';
-        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
+        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+(?:(?: und| oder) [0-9]+)*)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
         $buildSubParts = fn(string $nummer, string $connector) => '(?: (?:Absatz|Abs\.|Absätze) ' . $absatzNums . '(?:, (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?)?'
             . '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?'
-            . '(?: (?:Satz|S\.) [0-9]+)?'
+            // Satz accepts a short "und/oder" list ("Satz 6 und 7") so the second number isn't
+            // mistaken for the start of the next item in an outer compound list.
+            . '(?: (?:Satz|S\.) [0-9]+(?:(?: und| oder) [0-9]+)*)?'
             . '(?: (?:Alternative|Alt\.) [0-9]+)?'
-            . '(?: (?:Nummer|Nr\.) ' . $nummer . ')?'
+            // The "erste/zweite Alternative"/"Variante" qualifier may directly follow a Nummer
+            // with no Buchstabe in between (e.g. "Nummer 2 erste Alternative"), not just a Buchstabe.
+            . '(?: (?:Nummer|Nr\.) ' . $nummer . ')?' . $buchstabeQualifier
             . '(?:,? ' . $buchstaben . ')?'
-            . '(?: ' . $connector . ' (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
+            // Bare comma is also accepted here (not just $connector) because the keyword
+            // "Absatz|Abs." immediately follows, which disambiguates it from a comma that
+            // separates the next item in an outer §-list (e.g. "§ 98 Absatz 2 Nummer 2,
+            // Absatz 2a, Absatz 4 und 5" — each further Absatz clause for the same § 98).
+            // Unlike the word connectors, a comma has no leading space of its own (it attaches
+            // directly to the preceding token: "...Nummer 2, Absatz 2a", not "...Nummer 2 , Absatz 2a").
+            . '(?:(?:(?: ' . $connector . ')|,) (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
         $subPartsInner = $buildSubParts('[0-9]+', '(?:und|oder|sowie)');
         // Variant used only by the single-item patterns, with a Nummer list ("Nummer 1, 3 und 4",
         // "Nr. 1 bis 3") and "in Verbindung mit"/"i. V. m." before a further Absatz ("§ 81 Absatz 5 in
@@ -241,6 +253,10 @@ class syntax_plugin_normi extends SyntaxPlugin
         $subPartsListInner = $buildSubParts('[0-9]+(?:(?:,| und| oder| sowie| bis) [0-9]+)*', '(?:und|oder|sowie|in Verbindung mit|i\. ?V\. ?m\.)');
         $subParts     = '(?:' . $subPartsInner . ')?';
         $subPartsList = '(?:' . $subPartsListInner . ')?';
+        // Lighter Nummer-list variant (no "bis"/"in Verbindung mit") for the compound §-list item
+        // pattern below, needed for "Absatz 1 Nummer 4 und 8" within one item of a longer §-chain
+        // without pulling in the heavier $subPartsListInner connector alternation (PCRE size limit).
+        $subPartsInnerNumList = $buildSubParts('[0-9]+(?:(?:,| und| oder| sowie) [0-9]+)*', '(?:und|oder|sowie)');
 
         $nationalSynonyms = [];
         foreach (self::NATIONAL_LAW_SLUGS as $slug) {
@@ -272,13 +288,20 @@ class syntax_plugin_normi extends SyntaxPlugin
         );
 
         // Compound §-list without repeated "§": "§§ 2 Abs. 3, 5 Abs. 1 Nr. 1 AufenthG", also plain
-        // "§§ 25, 26 AufenthG" (no separate pattern for those, to stay within PCRE's size limit)
-        // (each item may carry its own Absatz/Unterabsatz/Satz/Nr./Buchstabe; not possessive so the
-        // greedy Absatz-number list inside subPartsInner can backtrack to find the correct item split)
-        $sectionItemPat = '(?:(?:des )?§(?:§)? )?[0-9]+[a-z]?(?:' . $subPartsInner . ')?';
+        // "§§ 25, 26 AufenthG" (no separate pattern for those, to stay within PCRE's size limit).
+        // Items may also be reintroduced with "die"/"den" ("die §§ 13, 14 Absatz 2") and carry a
+        // "bis" range ("§§ 85 bis 88"). (each item may carry its own Absatz/Unterabsatz/Satz/Nr./
+        // Buchstabe; not possessive so the greedy Absatz-number list inside subPartsInnerNumList
+        // can backtrack to find the correct item split — parseMatch()'s tokenizer additionally
+        // shrinks a greedy match if that backtracking still swallows the next item's lead number.)
+        $sectionItemPat = '(?:(?:die |den )?(?:des )?§(?:§)? )?[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:' . $subPartsInnerNumList . ')?';
         $sectionSep     = '(?:,| und| oder| sowie) ';
+        $this->lexerSectionItemPattern = $sectionItemPat;
+        $this->lexerSectionSepPattern  = $sectionSep;
         $this->Lexer->addSpecialPattern(
-            '!?(?:des )?§(?:§)? (?:' . $sectionItemPat . $sectionSep . ')+' . $sectionItemPat . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
+            // (?<![a-zA-ZäöüßÄÖÜ]) guards the optional "die|den" against matching as the tail of an
+            // unrelated word (e.g. "fin-den § 3 ..." must not be read as "den § 3 ...").
+            '!?(?<![a-zA-ZäöüßÄÖÜ])(?:die |den )?(?:des )?§(?:§)? (?:' . $sectionItemPat . $sectionSep . ')+' . $sectionItemPat . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
@@ -430,22 +453,66 @@ class syntax_plugin_normi extends SyntaxPlugin
                     // (e.g. "§ 60 Absatz 5 und 7"), it's not a compound at all — the "und 7"
                     // belongs to the Absatz-list, not a second §. Skip and let the single-item
                     // branch below handle it as one cohesive reference.
-                    $singleItemFullPat = '/^(?:(?:des )?§(?:§)? )?[0-9]+[a-z]?(?:' . $this->lexerSubPartsPattern . ')?$/';
+                    $singleItemFullPat = '/^(?:(?:die |den )?(?:des )?§(?:§)? )?[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:' . $this->lexerSubPartsPattern . ')?$/';
                     if (!preg_match($singleItemFullPat, $itemsText)) {
-                        // Items may repeat "§": "§ 68 Absatz 1 Satz 1 oder § 68a Absatz 1 Satz 1 des Asylgesetzes"
-                        $sepPat = '/(?:,| und| oder| sowie) (?=(?:(?:des )?§(?:§)? )?[0-9])/';
-                        $items = preg_split($sepPat, $itemsText);
-                        if (count($items) >= 2) {
-                            preg_match_all($sepPat, $itemsText, $connMatches);
+                        // Tokenize with the SAME item/separator grammar the Lexer pattern above is
+                        // built from, instead of a naive comma/digit heuristic — otherwise a
+                        // multi-value Absatz/Nummer chain within one § (e.g. "Absatz 1 Satz 6 und 7",
+                        // "Absatz 2 und 3 Nummer 2 erste Alternative") gets mistaken for the start
+                        // of the next item.
+                        $itemRe = '/^' . $this->lexerSectionItemPattern . '/u';
+                        $sepRe  = '/^' . $this->lexerSectionSepPattern . '/u';
+                        $items = [];
+                        $connectors = [];
+                        $pos = 0;
+                        $len = strlen($itemsText);
+                        while ($pos < $len) {
+                            if (!preg_match($itemRe, substr($itemsText, $pos), $im) || $im[0] === '') {
+                                break;
+                            }
+                            $itemMatch = $im[0];
+                            // The item regex is greedy: its trailing Absatz value list (e.g.
+                            // "Abs. 3, 5") may have swallowed a bare number that was actually meant
+                            // to start the NEXT item (e.g. "§§ 2 Abs. 3, 5 Abs. 1 Nr. 1 AufenthG" is
+                            // "§ 2 Abs. 3" + "§ 5 Abs. 1 Nr. 1", not "§ 2 Abs. 3, 5" + "Abs. 1 Nr. 1").
+                            // If no separator follows the greedy match, shrink it one comma-value at
+                            // a time and retry — this is only safe to do while the shrunk text is
+                            // still itself a complete, valid item.
+                            while (true) {
+                                $afterLen = $pos + strlen($itemMatch);
+                                $hasSep = $afterLen >= $len || preg_match($sepRe, substr($itemsText, $afterLen));
+                                if ($hasSep) {
+                                    break;
+                                }
+                                if (!preg_match('/^(.*),\s*[0-9]+[a-z]?$/', $itemMatch, $shrink)
+                                    || !preg_match('/^' . $this->lexerSectionItemPattern . '$/u', $shrink[1])) {
+                                    break;
+                                }
+                                $itemMatch = $shrink[1];
+                            }
+                            $items[] = $itemMatch;
+                            $pos += strlen($itemMatch);
+                            if ($pos >= $len) {
+                                break;
+                            }
+                            if (!preg_match($sepRe, substr($itemsText, $pos), $sm)) {
+                                break;
+                            }
+                            $connectors[] = $sm[0];
+                            $pos += strlen($sm[0]);
+                        }
+                        if ($pos === $len && count($items) >= 2) {
                             $parsedItems = [];
                             foreach ($items as $idx => $itemText) {
                                 $displayText = ($idx === count($items) - 1) ? $itemText . $regSuffix : $itemText;
-                                if (preg_match('/^(?:(?:des )?§(?:§)? )?([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                if (preg_match('/^(?:(?:die |den )?(?:des )?§(?:§)? )?([0-9]+[a-z]?) bis ([0-9]+[a-z]?)/', $itemText, $nm)) {
+                                    $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => strtolower($nm[2])];
+                                } elseif (preg_match('/^(?:(?:die |den )?(?:des )?§(?:§)? )?([0-9]+[a-z]?)/', $itemText, $nm)) {
                                     $parsedItems[] = ['text' => $displayText, 'article' => strtolower($nm[1]), 'article_to' => null];
                                 }
                             }
                             if (count($parsedItems) >= 2) {
-                                return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connMatches[0], 'regulation' => $regSlug];
+                                return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connectors, 'regulation' => $regSlug];
                             }
                         }
                     }
@@ -789,6 +856,7 @@ class syntax_plugin_normi extends SyntaxPlugin
                 }
                 if ($item['article_to'] !== null
                     && (preg_match('/^((?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm)
+                        || preg_match('/^((?:die |den )?(?:des )?§(?:§)? [0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm)
                         || preg_match('/^([0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm))) {
                     $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $bm[1]);
                     $renderer->doc .= ' bis ';
