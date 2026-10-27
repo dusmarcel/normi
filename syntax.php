@@ -305,10 +305,17 @@ class syntax_plugin_normi extends SyntaxPlugin
         $sectionSep     = '(?:,| und| oder| sowie) ';
         $this->lexerSectionItemPattern = $sectionItemPat;
         $this->lexerSectionSepPattern  = $sectionSep;
+        // The item loop is possessive: otherwise a long list NOT followed by a known law ("§§ 86,
+        // 86a, …, 306 bis 306c des Strafgesetzbuches") backtracks exponentially (roughly doubling
+        // per item) and trips pcre.backtrack_limit. Backtracking still happens within one
+        // item+separator, so a greedy Absatz list can still give back a number to the next item.
+        // The separator lookahead keeps the loop from swallowing an "und" that belongs to the last
+        // item's "und Absatz …" tail, which the possessive loop could no longer give back.
+        $sectionSepGuarded = $sectionSep . '(?=(?:die |den )?(?:des )?§|[0-9])';
         $this->Lexer->addSpecialPattern(
             // (?<![a-zA-ZäöüßÄÖÜ]) guards the optional "die|den" against matching as the tail of an
             // unrelated word (e.g. "fin-den § 3 ..." must not be read as "den § 3 ...").
-            '!?(?<![a-zA-ZäöüßÄÖÜ])(?:die |den )?(?:des )?§(?:§)? (?:' . $sectionItemPat . $sectionSep . ')+' . $sectionItemPat . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
+            '!?(?<![a-zA-ZäöüßÄÖÜ])(?:die |den )?(?:des )?§(?:§)? (?:' . $sectionItemPat . $sectionSepGuarded . ')++' . $sectionItemPat . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
             $mode,
             'plugin_normi'
         );
