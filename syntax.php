@@ -88,6 +88,11 @@ class syntax_plugin_normi extends SyntaxPlugin
         'rückführungsrichtlinie' => [
             'Rückführungsrichtlinie', 'RückführungsRL',
         ],
+        'arb-1-80' => [
+            'Assoziationsratsbeschluss EWG – Türkei Nr. 1/80', 'Assoziationsratsbeschlusses EWG – Türkei Nr. 1/80',
+            'Assoziationsratsbeschluss 1/80', 'Assoziationsratsbeschlusses 1/80',
+            'ARB 1/80',
+        ],
         'aeuv' => [
             'Vertrag über die Arbeitsweise der Europäischen Union',
             'Vertrags über die Arbeitsweise der Europäischen Union',
@@ -147,6 +152,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         'eurodac-verordnung-2013'         => 'verordnung_eu_nr._603_2013',
         'easo-verordnung'                 => 'verordnung_eu_nr._439_2010',
         'rückführungsrichtlinie'          => 'richtlinie_2008_115_eg',
+        'arb-1-80'                        => 'arb-1-80',
         'aeuv'                            => 'aeuv',
         'aufenthaltsgesetz'               => 'aufenthaltsgesetz',
         'asylgesetz'                      => 'asylgesetz',
@@ -197,6 +203,47 @@ class syntax_plugin_normi extends SyntaxPlugin
         return 1;
     }
 
+    /**
+     * Builds a regex alternation of the given literal terms with common prefixes factored out
+     * ("Asylverfahrens(?:verordnung|VO|richtlinie|RL)" instead of listing each term in full).
+     * The synonym lists are embedded in several Lexer patterns, so this keeps the combined master
+     * regex well under PCRE's compiled-size limit. Siblings always differ in their first character,
+     * so branch order is irrelevant; a term that is a prefix of another becomes a greedy optional
+     * tail, which preserves the previous longest-synonym-first preference.
+     */
+    private static function buildTrieAlternation(array $terms): string
+    {
+        $trie = [];
+        foreach ($terms as $term) {
+            $node = &$trie;
+            foreach (mb_str_split($term) as $ch) {
+                $node[$ch] ??= [];
+                $node = &$node[$ch];
+            }
+            $node[''] = true;
+            unset($node);
+        }
+        return self::trieToRegex($trie);
+    }
+
+    private static function trieToRegex(array $node): string
+    {
+        $isEnd = isset($node['']);
+        unset($node['']);
+        $branches = [];
+        foreach ($node as $ch => $child) {
+            $branches[] = preg_quote((string) $ch) . self::trieToRegex($child);
+        }
+        if (!$branches) {
+            return '';
+        }
+        $alt = count($branches) > 1 ? '(?:' . implode('|', $branches) . ')' : $branches[0];
+        if (!$isEnd) {
+            return $alt;
+        }
+        return (count($branches) > 1 ? $alt : '(?:' . $alt . ')') . '?';
+    }
+
     /** @inheritDoc */
     public function connectTo($mode)
     {
@@ -204,8 +251,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         foreach (self::REGULATIONS as $terms) {
             $synonyms = array_merge($synonyms, $terms);
         }
-        usort($synonyms, fn($a, $b) => strlen($b) - strlen($a));
-        $synonymPattern = implode('|', array_map('preg_quote', $synonyms));
+        $synonymPattern = self::buildTrieAlternation($synonyms);
         // Covers: new (EU) YYYY/NNNN, old (EU) Nr. NNNN/YYYY, old directive YYYY/NN/EU or /EG or without suffix,
         // and bare (EU) YYYY/NNNN or (EU) Nr. NNNN/YYYY (e.g. items of a "Verordnungen ... (EU) 2024/1347, ..." list)
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?|\(EU\) (?:Nr\. )?[0-9]+\/[0-9]+)';
@@ -264,8 +310,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         foreach (self::NATIONAL_LAW_SLUGS as $slug) {
             $nationalSynonyms = array_merge($nationalSynonyms, self::REGULATIONS[$slug]);
         }
-        usort($nationalSynonyms, fn($a, $b) => strlen($b) - strlen($a));
-        $nationalPattern = implode('|', array_map('preg_quote', $nationalSynonyms));
+        $nationalPattern = self::buildTrieAlternation($nationalSynonyms);
 
         $artPfx  = '(?:der |des |dem |die |den )?';
 

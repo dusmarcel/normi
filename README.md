@@ -114,6 +114,7 @@ Auch ein nacktes `(EU) 2024/1347` ohne vorangestelltes „Verordnung"/„Richtli
 | Rechtsakt | Synonyme |
 |---|---|
 | Rückführungsverordnung (EU) 2026/2280 | RückführungsVO |
+| Assoziationsratsbeschluss EWG – Türkei Nr. 1/80 | ARB 1/80, Assoziationsratsbeschluss 1/80 (die Langformen auch im Genitiv „Assoziationsratsbeschlusses …“) |
 
 ### Ältere Rechtsakte (GEAS-System bis 2024)
 
