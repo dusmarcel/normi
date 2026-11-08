@@ -1,0 +1,34 @@
+/* normi: hover preview popup (see script.js) */
+.normi-preview {
+    position: fixed;
+    z-index: 1000;
+    box-sizing: border-box;
+    width: 34em;
+    max-width: calc(100vw - 16px);
+    max-height: 22em;
+    overflow: auto;
+    padding: .6em 1em;
+    font-size: 90%;
+    background-color: __background__;
+    color: __text__;
+    border: 1px solid __border__;
+    border-radius: 4px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+}
+
+.normi-preview[hidden] {
+    display: none;
+}
+
+.normi-preview h1 {
+    font-size: 1.4em;
+    margin: 0 0 .4em;
+}
+
+.normi-preview h2 {
+    font-size: 1.2em;
+}
+
+.normi-preview > :last-child {
+    margin-bottom: 0;
+}

@@ -917,11 +917,11 @@ class syntax_plugin_normi extends SyntaxPlugin
                     && (preg_match('/^((?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm)
                         || preg_match('/^((?:die |den )?(?:des )?§(?:§)? [0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm)
                         || preg_match('/^([0-9]+[a-z]?) bis (.+)$/', $item['text'], $bm))) {
-                    $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $bm[1]);
+                    $this->previewLink($renderer, 'art._' . $item['article'] . '_' . $regulation, $bm[1]);
                     $renderer->doc .= ' bis ';
-                    $renderer->internallink('art._' . $item['article_to'] . '_' . $regulation, $bm[2]);
+                    $this->previewLink($renderer, 'art._' . $item['article_to'] . '_' . $regulation, $bm[2]);
                 } else {
-                    $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $item['text']);
+                    $this->previewLink($renderer, 'art._' . $item['article'] . '_' . $regulation, $item['text']);
                 }
             }
             return true;
@@ -934,10 +934,10 @@ class syntax_plugin_normi extends SyntaxPlugin
                     $renderer->doc .= hsc($data['connectors'][$i - 1]);
                 }
                 $fromText = $i === 0 ? $data['prefix'] . $item['article'] : $item['article'];
-                $renderer->internallink('art._' . $item['article'] . '_' . $regulation, $fromText);
+                $this->previewLink($renderer, 'art._' . $item['article'] . '_' . $regulation, $fromText);
                 if ($item['article_to'] !== null) {
                     $renderer->doc .= ' bis ';
-                    $renderer->internallink('art._' . $item['article_to'] . '_' . $regulation, $item['article_to']);
+                    $this->previewLink($renderer, 'art._' . $item['article_to'] . '_' . $regulation, $item['article_to']);
                 }
             }
             return true;
@@ -945,9 +945,9 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         if (isset($data['article_to'])) {
             $this->lastArticleRegulation = $regulation;
-            $renderer->internallink('art._' . $data['article'] . '_' . $regulation, $data['prefix'] . $data['article']);
+            $this->previewLink($renderer, 'art._' . $data['article'] . '_' . $regulation, $data['prefix'] . $data['article']);
             $renderer->doc .= ' bis ';
-            $renderer->internallink('art._' . $data['article_to'] . '_' . $regulation, $data['article_to'] . ' ' . $data['reg_text']);
+            $this->previewLink($renderer, 'art._' . $data['article_to'] . '_' . $regulation, $data['article_to'] . ' ' . $data['reg_text']);
             return true;
         }
 
@@ -966,7 +966,7 @@ class syntax_plugin_normi extends SyntaxPlugin
                 } else {
                     $linkText = $article;
                 }
-                $renderer->internallink($pageId, $linkText);
+                $this->previewLink($renderer, $pageId, $linkText);
             }
             return true;
         }
@@ -988,8 +988,22 @@ class syntax_plugin_normi extends SyntaxPlugin
             $this->lastArticleRegulation = $regulation;
         }
 
-        $renderer->internallink($pageId, $data['match']);
+        $this->previewLink($renderer, $pageId, $data['match']);
 
         return true;
+    }
+
+    /**
+     * Emit an internal link marked with data-normi-preview, so script.js can show
+     * a hover preview of the target page.
+     */
+    private function previewLink(Doku_Renderer $renderer, string $id, string $text): void
+    {
+        if (!($renderer instanceof Doku_Renderer_xhtml)) {
+            $renderer->internallink($id, $text);
+            return;
+        }
+        $html = $renderer->internallink($id, $text, null, true);
+        $renderer->doc .= preg_replace('/<a /', '<a data-normi-preview="1" ', $html, 1);
     }
 }

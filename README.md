@@ -201,6 +201,10 @@ Für Rechtsakte im alten „(EU) Nr. NNNN/YYYY"-Format enthält der Seitenname `
 
 Für alte Richtlinien im Format „YYYY/NN/EU" steht die Jahreszahl am Anfang, z. B. `richtlinie_2013_33_eu`.
 
+## Vorschau beim Überfahren
+
+Bleibt der Mauszeiger kurz (0,5 s) auf einem von normi erzeugten Link stehen, öffnet sich über dem Mauszeiger ein Popup mit einer Vorschau der Zielseite. Der Inhalt wird über `?do=export_xhtmlbody` geladen, also ohne Sidebar und Template. Man kann mit der Maus in das Popup wechseln, um darin zu scrollen oder Links anzuklicken; `Esc` schließt es. Die Vorschau erscheint nur bei Links auf existierende Seiten und nicht auf reinen Touch-Geräten.
+
 ## Lizenz
 
 Copyright (C) Marcel Keienborg <marcel@aufentha.lt>
