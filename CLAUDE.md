@@ -30,7 +30,7 @@ Laws *without* wiki pages are handled by `ExternalLaws.php` (class `dokuwiki\plu
 
 ### Lexer pitfalls
 
-- DokuWiki combines all patterns of a mode into **one** regex; PCRE's compiled-size limit is close. Every addition to a pattern that is embedded in several Lexer patterns costs multiple times. Bounded quantifiers like `{0,7}` on groups are unrolled and expensive.
+- DokuWiki combines all patterns of a mode — core modes (acronyms, smileys, entities) and *all* plugins — into **one** regex, and again into the closer scans of formatting modes ("opaque spans"); PCRE's compiled-size limit is close. Exceeding it shows "A PCRE internal error occured" on every page. Measure the headroom of the *real* combined regex (not normi's patterns alone) and keep several thousand characters spare, since production wikis add acronyms and plugins. Subroutine calls (`(?+n)`, `(?(R)…)`) can't be used to share sub-patterns: bare parentheses are escaped and the closer scans have no per-pattern groups. Every addition to a pattern that is embedded in several Lexer patterns costs multiple times. Bounded quantifiers like `{0,7}` on groups are unrolled and expensive.
 - The Lexer compiles **without `/u`** (byte mode): don't put umlauts into character classes; spell them as alternatives or byte sequences (`\xC3[\x84\x96\x9C]`).
 - `ParallelRegex::escapePattern()` escapes `/` itself — inside a character class write `/` **unescaped** (`[A-Za-z0-9/-]`), otherwise `\/` turns into a broken delimiter.
 

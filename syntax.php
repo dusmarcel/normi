@@ -258,21 +258,24 @@ class syntax_plugin_normi extends SyntaxPlugin
         // and bare (EU) YYYY/NNNN or (EU) Nr. NNNN/YYYY (e.g. items of a "Verordnungen ... (EU) 2024/1347, ..." list)
         $euPattern = '(?:(?:Verordnung|Richtlinie) \(EU\) (?:Nr\. )?[0-9]+\/[0-9]+|Richtlinie [0-9]{4}\/[0-9]+(?:\/(?:EU|EG))?|\(EU\) (?:Nr\. )?[0-9]+\/[0-9]+)';
 
-        $absatzNums = '[0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?)?)*)?';
+        // Absatz/Unterabsatz value list: "1", "1 bis 3", "1, 2 und 4", "2 bis 4 oder 6". Kept as
+        // short as possible — it occurs about 45 times in the Lexer's combined regex (PCRE size limit).
+        $absatzNums = '[0-9]+[a-z]?(?:(?: bis|,| und| oder| sowie) [0-9]+[a-z]?)*';
         // Optional "erste/zweite Alternative" or "Variante" qualifier on a Buchstabe reference.
         // Placed once at the END of the buchstaben group (not per-letter) to avoid duplicating
         // ~90 chars of PCRE per letter occurrence and stay within PCRE's compiled-size limit.
-        $buchstabeQualifier = '(?: (?:erste|zweite|dritte|vierte|fünfte|sechste|siebte|achte|neunte|zehnte) (?:Alternative|Variante))?';
+        // Any ordinal ("erste", "zweite", …, "letzte") — spelled generically to keep it short.
+        $buchstabeQualifier = '(?: (?:[a-z]+|fünf)te (?:Alternative|Variante))?';
         // (?![a-zäöüß]) ensures the letter is a standalone token, not the start of a word (e.g. "der")
         $buchstabeLetter = '[a-z](?![a-zäöüß])';
-        $buchstaben = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
-            . '(?:(?: bis ' . $buchstabeLetter . ')?(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*)'
+        $buchstaben = '(?:Buchst(?:aben?|\.) ' . $buchstabeLetter
+            . '(?:(?: bis ' . $buchstabeLetter . ')?(?:(?:,| und| oder| sowie)? (?:Buchst(?:aben?|\.) )?' . $buchstabeLetter . ')*)'
             . $buchstabeQualifier
             . '|lit\. [a-z]\)|[a-z]\))';
         // Simpler buchstaben variant for $extSubParts — keeps the repeated-group pattern compact to
         // avoid pushing the combined Lexer master regex over PCRE's internal compiled-size limit.
-        $buchstabenSimple = '(?:(?:Buchstabe|Buchstaben|Buchst\.) ' . $buchstabeLetter
-            . '(?:(?:,| und| oder| sowie)? (?:(?:Buchstabe|Buchstaben|Buchst\.) )?' . $buchstabeLetter . ')*'
+        $buchstabenSimple = '(?:Buchst(?:aben?|\.) ' . $buchstabeLetter
+            . '(?:(?:,| und| oder| sowie)? (?:Buchst(?:aben?|\.) )?' . $buchstabeLetter . ')*'
             . $buchstabeQualifier
             . '|lit\. [a-z]\))';
         $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
@@ -329,32 +332,34 @@ class syntax_plugin_normi extends SyntaxPlugin
         $this->lexerSubPartsPattern = $subPartsListInner;
         $this->lexerNationalPattern = $nationalPattern;
 
+        // DokuWiki joins the patterns of ALL modes and plugins allowed in a mode into one regex (and
+        // again into the closer scans of formatting modes), and PCRE's limit on its compiled size is
+        // the hard constraint here: exceeding it breaks every page with "A PCRE internal error
+        // occured". So no sub-pattern may be repeated needlessly — e.g. the compound lists repeat
+        // their item pattern only once (item(?:sep item)++). Subroutine calls to shared
+        // sub-patterns are not an option: patterns can't contain capturing groups, and relative
+        // references to the Lexer's per-pattern groups break in the closer scans, which join the
+        // patterns without such groups.
+        $add = function (string $pattern) use ($mode): void {
+            $this->Lexer->addSpecialPattern($pattern, $mode, 'plugin_normi');
+        };
+        $artLaw = '(?:' . $artLawPattern . ')';
+
         // Compound: "Artikel 3, Artikel 4 Absatz 1, ..., die Artikel 16 bis 18 der Richtlinie 2008/115/EG"
         $singleItemPat = '(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?: bis [0-9]+[a-z]?)?' . $subPartsInner . ')?';
         $compoundSep   = '(?:, (?:und (?:die |den )?)?| und (?:die |den )?)(?=(?:die |den )?(?:Art\.|Artikel|Artikeln|des Artikels))';
-        $this->Lexer->addSpecialPattern(
-            '!?(?:' . $singleItemPat . $compoundSep . ')++' . $singleItemPat . ' ' . $artPfx . '(?:' . $artLawPattern . ')',
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?' . $singleItemPat . '(?:' . $compoundSep . $singleItemPat . ')++ ' . $artPfx . $artLaw);
 
-        $this->Lexer->addSpecialPattern(
-            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subPartsList . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?(?:des )?§(?:§)? [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subPartsList . ' ' . $artPfx . '(?:' . $nationalPattern . ')');
 
         // Compound §-list without repeated "§": "§§ 2 Abs. 3, 5 Abs. 1 Nr. 1 AufenthG", also plain
         // "§§ 25, 26 AufenthG" (no separate pattern for those, to stay within PCRE's size limit).
         // Items may also be reintroduced with "die"/"den" ("die §§ 13, 14 Absatz 2") and carry a
         // "bis" range ("§§ 85 bis 88"). Uses its own $buildSubParts call (not the shared
-        // $subPartsInner) so the Nummer-qualifier addition is paid for only here, where "Nummer 2
-        // erste Alternative" actually needs to appear within one item of a longer §-chain — this
-        // item pattern occurs twice in the compound below, and a heavier sub-pattern here
-        // previously pushed the combined Lexer master regex over PCRE's compiled-size limit (see
-        // git history). Lists like "Nummer 4 und 8" within one item therefore still split into a
-        // (harmless, same-regulation) extra bare-number item; parseMatch()'s tokenizer shrinks a
-        // greedy match if it swallows the next item's number.
+        // $subPartsInner) so the Nummer qualifier and the "Satz 6 und 7"/"Nummer 4 und 8" lists are
+        // paid for only here, where they keep such a number attached to its own § instead of being
+        // mistaken for the next item; parseMatch()'s tokenizer shrinks a greedy match if it
+        // swallows the next item's number.
         $sectionItemSubParts = $buildSubParts('[0-9]+', '(?:und|oder|sowie)', true, true, true);
         $sectionItemPat = '(?:(?:die |den )?(?:des )?§(?:§)? )?[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:' . $sectionItemSubParts . ')?';
         $sectionSep     = '(?:,| und| oder| sowie) ';
@@ -363,80 +368,42 @@ class syntax_plugin_normi extends SyntaxPlugin
         // The item loop is possessive: otherwise a long list NOT followed by a known law ("§§ 86,
         // 86a, …, 306 bis 306c des Strafgesetzbuches") backtracks exponentially (roughly doubling
         // per item) and trips pcre.backtrack_limit. Backtracking still happens within one
-        // item+separator, so a greedy Absatz list can still give back a number to the next item.
-        // The separator lookahead keeps the loop from swallowing an "und" that belongs to the last
-        // item's "und Absatz …" tail, which the possessive loop could no longer give back.
+        // separator+item, so a greedy Absatz list can still give back a number to the next item.
+        // The separator lookahead keeps an item from swallowing an "und" that belongs to its own
+        // "und Absatz …" tail, which the possessive loop could no longer give back.
         $sectionSepGuarded = $sectionSep . '(?=(?:die |den )?(?:des )?§|[0-9])';
-        $this->Lexer->addSpecialPattern(
+        $add(
             // (?<![a-zA-ZäöüßÄÖÜ]) guards the optional "die|den" against matching as the tail of an
             // unrelated word (e.g. "fin-den § 3 ..." must not be read as "den § 3 ...").
-            '!?(?<![a-zA-ZäöüßÄÖÜ])(?:die |den )?(?:des )?§(?:§)? (?:' . $sectionItemPat . $sectionSepGuarded . ')++' . $sectionItemPat . ' ' . $artPfx . '(?:' . $nationalPattern . ')',
-            $mode,
-            'plugin_normi'
+            '!?(?<![a-zA-ZäöüßÄÖÜ])(?:die |den )?(?:des )?§(?:§)? ' . $sectionItemPat . '(?:' . $sectionSepGuarded . $sectionItemPat . ')++ ' . $artPfx . '(?:' . $nationalPattern . ')'
         );
 
         // Also handles "Artikeln 1 und 79 Absatz 3 der Verordnung (EU) 2024/1348": the trailing
         // $subParts (optional) lets the LAST item carry Absatz/Unterabsatz/… before the regulation.
         // The optional (?: bis N)? in each slot also covers "Artikeln 20 bis 26 und 28 bis 35 der …"
-        // without a new Lexer alternation (avoids pushing the compiled master regex over PCRE's size limit).
-        $this->Lexer->addSpecialPattern(
-            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)+'  . $subParts . ' ' . $artPfx . '(?:' . $artLawPattern . ')',
-            $mode,
-            'plugin_normi'
-        );
+        // without a new Lexer alternation.
+        $add('!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)+' . $subParts . ' ' . $artPfx . $artLaw);
 
-        $this->Lexer->addSpecialPattern(
-            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subPartsList . ' ' . $artPfx . '(?:' . $artLawPattern . ')',
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subPartsList . ' ' . $artPfx . $artLaw);
 
         // Bare "Artikel 25 bis 28 und 34" / "Artikel 25 bis 28" (no explicit law — falls back to the current page's regulation)
         $artBisListInner = '[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*';
-        $this->Lexer->addSpecialPattern(
-            '!?(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner,
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner);
 
-        $this->Lexer->addSpecialPattern(
-            '!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+',
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+');
 
-        $this->Lexer->addSpecialPattern(
-            // Possessive [0-9]++[a-z]?+ so the trailing lookaheads can't be satisfied by backtracking
-            // into a shorter article number (e.g. matching just "2" out of "25 bis 28")
-            '!?(?:Art\.|Artikel|des Artikels) [0-9]++[a-z]?+(?:' . $subPartsListInner . ')?+(?!, [0-9])(?! bis [0-9])',
-            $mode,
-            'plugin_normi'
-        );
+        // Possessive [0-9]++[a-z]?+ so the trailing lookaheads can't be satisfied by backtracking
+        // into a shorter article number (e.g. matching just "2" out of "25 bis 28")
+        $add('!?(?:Art\.|Artikel|des Artikels) [0-9]++[a-z]?+(?:' . $subPartsListInner . ')?+(?!, [0-9])(?! bis [0-9])');
 
         // Bare "§§ 16a bis 16c, 16e sowie 16f" (no explicit law — falls back to the current page's regulation)
-        $this->Lexer->addSpecialPattern(
-            '!?(?:des )?§(?:§)? ' . $artBisListInner,
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?(?:des )?§(?:§)? ' . $artBisListInner);
 
-        $this->Lexer->addSpecialPattern(
-            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+',
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+');
 
-        $this->Lexer->addSpecialPattern(
-            '!?(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder| sowie) [0-9])' . $subPartsList,
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder| sowie) [0-9])' . $subPartsList);
 
-        $this->Lexer->addSpecialPattern(
-            '!?(?:' . $synonymPattern . '|' . $euPattern . ')',
-            $mode,
-            'plugin_normi'
-        );
+        $add('!?(?:' . $synonymPattern . '|' . $euPattern . ')');
     }
 
     /** @inheritDoc */
