@@ -1,6 +1,6 @@
 # normi Plugin für DokuWiki
 
-Erzeugt automatisch interne Links auf Wiki-Seiten für Artikel von EU-Rechtsakten des Gemeinsamen Europäischen Asylsystems (GEAS), EU-Primärrecht (AEUV) sowie für Paragraphen nationaler deutscher Gesetze.
+Erzeugt automatisch interne Links auf Wiki-Seiten für Artikel von EU-Rechtsakten des Gemeinsamen Europäischen Asylsystems (GEAS), EU-Primärrecht (AEUV) sowie für Paragraphen nationaler deutscher Gesetze. Normen, die das Wiki nicht führt, werden zu dejure.org, buzer.de oder gesetze-im-internet.de verlinkt.
 
 ## Installation
 
@@ -47,7 +47,9 @@ Lässt sich weder aus der Überschrift noch aus der Page-ID eine bekannte Norm a
 
 ### Verlinkung unterdrücken (`!`)
 
-Ein vorangestelltes `!` (analog zu DokuWikis eigener `!CamelCase`-Schreibweise) weist normi an, die unmittelbar folgende Norm **nicht** zu verlinken und stattdessen als reinen Text auszugeben, z. B. `!§ 14 BGB` oder `!Art. 5 Anerkennungsverordnung`. So bleibt der Text für andere Mechanismen (z. B. ein dejure.org-artiges Verlinkungs-Plugin, das auf den gerenderten Text zugreift) zugänglich — besonders nützlich für Normen, die in diesem Wiki nicht als eigene Seite abgebildet sind.
+Ein vorangestelltes `!` (analog zu DokuWikis eigener `!CamelCase`-Schreibweise) weist normi an, die unmittelbar folgende Norm **überhaupt nicht** zu verlinken — weder ins Wiki noch extern (siehe [Normen ohne Wiki-Seite](#normen-ohne-wiki-seite)) — und stattdessen als reinen Text auszugeben, z. B. `!§ 14 BGB` oder `!Art. 5 Anerkennungsverordnung`. So bleibt der Text für andere Mechanismen (z. B. ein dejure.org-Verlinkungs-Plugin, das auf den gerenderten Text zugreift) zugänglich.
+
+Seit normi Normen ohne Wiki-Seite selbst zu dejure.org, buzer.de oder gesetze-im-internet.de verlinkt, ist das `!` dafür meist nicht mehr nötig und kann nach und nach entfernt werden.
 
 In **Tabellen** wird zusätzlich die Kopfzeile (erste Zeile) der jeweiligen Spalte herangezogen: Nennt die Kopfzelle einer Spalte einen Rechtsakt, werden bare Artikelverweise in dieser Spalte (ab der zweiten Zeile) auf diesen Rechtsakt statt auf die aktuelle Seite bezogen.
 
@@ -91,7 +93,7 @@ EU-Richtlinien im alten Format `Richtlinie YYYY/NN/EG` (z. B. `Artikel 13 der Ri
 | Rechtsakt | Synonyme |
 |---|---|
 | Anerkennungsverordnung (EU) 2024/1347 | Qualifikationsverordnung, AnerkennungsVO, QualifikationsVO, QVO, Statusverordnung, StatusVO |
-| Asylverfahrensverordnung (EU) 2024/1348 | AsylverfahrensVO, AVVO |
+| Asylverfahrensverordnung (EU) 2024/1348 | AsylverfahrensVO, AVVO, AsylVfVO |
 | Aufnahmerichtlinie (EU) 2024/1346 | AufnahmeRL, Aufnahmerichtlinie 2024, AufnahmeRL 2024 |
 | Grenzrückführungsverordnung (EU) 2024/1349 | GrenzrückführungsVO, GrenzRüFüVO, GrenzRFVO |
 | Resettlementverordnung (EU) 2024/1350 | ResettlementVO |
@@ -121,7 +123,7 @@ Auch ein nacktes `(EU) 2024/1347` ohne vorangestelltes „Verordnung"/„Richtli
 | Rechtsakt | Synonyme |
 |---|---|
 | Aufnahmerichtlinie 2013/33/EU | Aufnahmerichtlinie 2013, AufnahmeRL 2013 |
-| Qualifikationsrichtlinie 2011/95/EU | QualifikationsRL, Anerkennungsrichtlinie, AnerkennungsRL |
+| Qualifikationsrichtlinie 2011/95/EU | QualifikationsRL, Anerkennungsrichtlinie, AnerkennungsRL, QRL |
 | Asylverfahrensrichtlinie 2013/32/EU | AsylverfahrensRL |
 | Dublin-III-Verordnung (EU) Nr. 604/2013 | Dublin-III-VO, DublinVO, Dublin III, Dublin-III, Dublin III-Verordnung, Dublin III-VO |
 | Eurodac-Verordnung (EU) Nr. 603/2013 | Eurodac-Verordnung 2013, Eurodac-VO 2013 |
@@ -200,6 +202,25 @@ Da jeweils zwei Fassungen existieren (2013 und 2024), wird die Version über die
 Für Rechtsakte im alten „(EU) Nr. NNNN/YYYY"-Format enthält der Seitenname `_nr._`, z. B. verlinkt `Art. 13 Dublin-III-Verordnung` auf `art._13_dublin-iii-verordnung`. Die Startseite des Rechtsakts lautet entsprechend `verordnung_eu_nr._604_2013`.
 
 Für alte Richtlinien im Format „YYYY/NN/EU" steht die Jahreszahl am Anfang, z. B. `richtlinie_2013_33_eu`.
+
+## Normen ohne Wiki-Seite
+
+Verweise auf Gesetze, die das Wiki nicht führt, verlinkt normi extern — in dieser Reihenfolge auf die erste Seite, die das Gesetz führt:
+
+1. **dejure.org**, z. B. `https://dejure.org/gesetze/StGB/46.html`
+2. **buzer.de**, z. B. `https://www.buzer.de/s1.htm?a=8&g=RBEG`
+3. **gesetze-im-internet.de** als letzte Notlösung, z. B. `https://www.gesetze-im-internet.de/vwvfg/__5.html`
+
+Führt keine der drei Seiten das Gesetz, bleibt der Verweis reiner Text (und damit für andere Plugins zugänglich). Für Gesetze, die das Wiki selbst führt, ändert sich nichts: Sie werden weiter ins Wiki verlinkt, auch wenn die Seite des Paragraphen noch fehlt (roter Link).
+
+**Erkannt werden:**
+
+- **Abkürzungen** mit mindestens zwei Großbuchstaben nach `§`/`Art.`: `§ 14 BGB`, `§ 5 VwVfG`, `§ 7 SGB II`, `Art. 6 GG`, `Art. 8 EMRK`, `Art. 47 GRCh`. Kürzel, die keine Gesetze sind (Gerichte, Zeitschriften, `UAbs`, `HS` usw.), sind ausgenommen.
+- **Langformen**, die in [ExternalLaws.php](ExternalLaws.php) hinterlegt sind (`PARAGRAPH_LAWS`, `ARTICLE_LAWS`): z. B. `§ 46 Absatz 2 des Strafgesetzbuches`, `§§ 47 bis 52 des Zwölften Buches Sozialgesetzbuch`, `Artikel 16a des Grundgesetzes`, `Art. 47 der Charta der Grundrechte der Europäischen Union`. Eine fehlende Langform wird dort mit Abkürzung und Beugungsformen ergänzt.
+
+Bisher wurde etwa `§ 46 Absatz 2 Satz 2 des Strafgesetzbuches` auf einer AufenthG-Seite fälschlich auf § 46 AufenthG bezogen; jetzt zeigt der Link auf § 46 StGB.
+
+**Prüfung und Cache:** Ob eine Seite das Gesetz führt, fragt normi einmal pro Gesetz online ab und merkt sich das Ergebnis 30 Tage lang in DokuWikis Cache-Verzeichnis (`*.normi`). dejure.org drosselt schnelle Anfragen (HTTP 429). Antwortet eine Seite nicht, gilt das Ergebnis nur eine Stunde, und die Wiki-Seite wird so lange nicht gecacht; pro Seitenaufruf werden höchstens sechs neue Gesetze (bzw. 8 Sekunden) geprüft, der Rest beim nächsten Aufruf. Unmittelbar nach dem Einspielen können externe Links deshalb vorübergehend fehlen oder auf buzer.de statt dejure.org zeigen.
 
 ## Vorschau beim Überfahren
 
