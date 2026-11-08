@@ -401,10 +401,14 @@ class syntax_plugin_normi extends SyntaxPlugin
         // into a shorter article number (e.g. matching just "2" out of "25 bis 28")
         $add('!?(?:Art\.|Artikel|des Artikels) [0-9]++[a-z]?+(?:' . $subPartsListInner . ')?+(?!, [0-9])(?! bis [0-9])');
 
-        // Bare "§§ 16a bis 16c, 16e sowie 16f" (no explicit law — falls back to the current page's regulation)
-        $add('!?(?:des )?§(?:§)? ' . $artBisListInner);
+        // Bare "§§ 16a bis 16c, 16e sowie 16f" (no explicit law — falls back to the current page's
+        // regulation). Not if Absatz/Satz/Nummer follows: then the last item carries sub-parts and
+        // the next pattern takes the whole list.
+        $add('!?(?:des )?§(?:§)? (?>' . $artBisListInner . ')(?! (?:Abs|Satz|S\.|Nummer|Nr\.|Unterabs|UA))');
 
-        $add('!?(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder| sowie) [0-9])' . $subPartsList);
+        // Bare "§ 5 Absatz 1", also after a list of bare numbers: "§§ 12, 13 Absatz 1 in Verbindung
+        // mit Absatz 2 Nummer 1"
+        $add('!?(?:des )?§(?:§)? (?:[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:,| und| oder| sowie) (?=[0-9]))*+[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?!(?:,| und| oder| sowie) [0-9])' . $subPartsList);
 
         $add('!?(?:' . $synonymPattern . '|' . $euPattern . ')');
     }
@@ -644,6 +648,30 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
 
         // Bare "Artikel 25 bis 28 und 34" / "§§ 16a bis 16c, 16e sowie 16f" (no explicit law) — resolves via the current page's regulation
+        // "§§ 12, 13 Absatz 1 in Verbindung mit Absatz 2 Nummer 1", "§§ 4 bis 7 Nummer 1 bis 10" (no
+        // explicit law): bare numbers or ranges whose last item carries sub-parts
+        if (preg_match('/^((?:des )?§(?:§)? )((?:[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:,| und| oder| sowie) )*)([0-9]+[a-z]?)(?: bis ([0-9]+[a-z]?))?(' . $this->lexerSubPartsPattern . ')$/', $match, $m)
+            && $m[5] !== '' && ($m[2] !== '' || $m[4] !== '')) {
+            preg_match_all('/([0-9]+[a-z]?)(?: bis ([0-9]+[a-z]?))?((?:,| und| oder| sowie) )/', $m[2], $parts, PREG_SET_ORDER);
+            $items = [];
+            $connectors = [];
+            foreach ($parts as $i => $part) {
+                $to = ($part[2] ?? '') !== '' ? strtolower($part[2]) : null;
+                $items[] = [
+                    'text'       => ($i === 0 ? $m[1] : '') . $part[1] . ($to !== null ? ' bis ' . $part[2] : ''),
+                    'article'    => strtolower($part[1]),
+                    'article_to' => $to,
+                ];
+                $connectors[] = $part[3];
+            }
+            $items[] = [
+                'text'       => ($m[2] === '' ? $m[1] : '') . $m[3] . ($m[4] !== '' ? ' bis ' . $m[4] : '') . $m[5],
+                'article'    => strtolower($m[3]),
+                'article_to' => $m[4] !== '' ? strtolower($m[4]) : null,
+            ];
+            return ['match' => $match, 'compound' => $items, 'connectors' => $connectors, 'regulation' => '__current__'];
+        }
+
         if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )(' . self::BARE_LIST . ')$/', $match, $m)) {
             preg_match_all('/(?:^|((?:,| und| oder| sowie) ))([0-9]+[a-z]?)(?: bis ([0-9]+[a-z]?))?/', $m[2], $am, PREG_SET_ORDER);
             $items = [];
