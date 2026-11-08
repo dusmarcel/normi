@@ -14,6 +14,9 @@ class syntax_plugin_normi extends SyntaxPlugin
     // Slugs of national laws (use § not Artikel — bare Artikel refs on these pages are suppressed)
     const NATIONAL_LAW_SLUGS = ['aufenthaltsgesetz', 'asylgesetz', 'asylbewerberleistungsgesetz', 'beschäftigungsverordnung', 'aufenthaltsverordnung', 'staatsangehörigkeitsgesetz', 'verwaltungsgerichtsordnung', 'freizügigkeitsgesetz-eu', 'ukraine-aufenthalts-übergangsverordnung'];
 
+    /** Bare item list after "§"/"Artikel": a range ("25 bis 28") or at least two items, each possibly a range */
+    const BARE_LIST = '[0-9]+[a-z]?(?: bis [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*|(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)+)';
+
     /** Cached synonym/EU patterns for use in handle() (set in connectTo) */
     private $lexerSynonymPattern = '';
     private $lexerEuPattern = '';
@@ -388,11 +391,11 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         $add('!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?: f{1,2}\.?| bis [0-9]+[a-z]?)?' . $subPartsList . ' ' . $artPfx . $artLaw);
 
-        // Bare "Artikel 25 bis 28 und 34" / "Artikel 25 bis 28" (no explicit law — falls back to the current page's regulation)
-        $artBisListInner = '[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*';
+        // Bare "Artikel 25 bis 28 und 34", "Artikel 25 bis 28", "Artikel 3 und 4 sowie 6 bis 7" (no
+        // explicit law — falls back to the current page's regulation): a range, or a list of at
+        // least two items, any of which may be a range
+        $artBisListInner = self::BARE_LIST;
         $add('!?(?:Art\.|Artikel|Artikeln|des Artikels) ' . $artBisListInner);
-
-        $add('!?(?:Art\.|Artikel|Artikeln|des Artikels) [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+');
 
         // Possessive [0-9]++[a-z]?+ so the trailing lookaheads can't be satisfied by backtracking
         // into a shorter article number (e.g. matching just "2" out of "25 bis 28")
@@ -400,8 +403,6 @@ class syntax_plugin_normi extends SyntaxPlugin
 
         // Bare "§§ 16a bis 16c, 16e sowie 16f" (no explicit law — falls back to the current page's regulation)
         $add('!?(?:des )?§(?:§)? ' . $artBisListInner);
-
-        $add('!?(?:des )?§(?:§)? [0-9]+[a-z]?(?:(?:,| und| oder| sowie) [0-9]+[a-z]?)+');
 
         $add('!?(?:des )?§(?:§)? [0-9]+[a-z]?(?!(?:,| und| oder| sowie) [0-9])' . $subPartsList);
 
@@ -643,7 +644,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
 
         // Bare "Artikel 25 bis 28 und 34" / "§§ 16a bis 16c, 16e sowie 16f" (no explicit law) — resolves via the current page's regulation
-        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )([0-9]+[a-z]?(?: bis [0-9]+[a-z]?)(?:(?:,| und| oder| sowie) [0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?)*)$/', $match, $m)) {
+        if (preg_match('/^((?:Art\.|Artikel|Artikeln|des Artikels|(?:des )?§(?:§)?) )(' . self::BARE_LIST . ')$/', $match, $m)) {
             preg_match_all('/(?:^|((?:,| und| oder| sowie) ))([0-9]+[a-z]?)(?: bis ([0-9]+[a-z]?))?/', $m[2], $am, PREG_SET_ORDER);
             $items = [];
             $connectors = [];
@@ -1020,7 +1021,12 @@ class syntax_plugin_normi extends SyntaxPlugin
                 $this->normLink($renderer, $regulation, $item['article'], $fromText);
                 if ($item['article_to'] !== null) {
                     $renderer->doc .= ' bis ';
-                    $this->normLink($renderer, $regulation, $item['article_to'], $item['article_to']);
+                    if ((int) $item['article_to'] < (int) $item['article']) {
+                        // Not a range but a date: "Artikeln 1, 2, … und 35 bis 21. Dezember 2013"
+                        $renderer->doc .= hsc($item['article_to']);
+                    } else {
+                        $this->normLink($renderer, $regulation, $item['article_to'], $item['article_to']);
+                    }
                 }
             }
             return true;
