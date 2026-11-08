@@ -278,7 +278,7 @@ class syntax_plugin_normi extends SyntaxPlugin
             . '(?:(?:,| und| oder| sowie)? (?:Buchst(?:aben?|\.) )?' . $buchstabeLetter . ')*'
             . $buchstabeQualifier
             . '|lit\. [a-z]\))';
-        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+)?(?:,? ' . $buchstabenSimple . ')?';
+        $extSubParts   = '(?: (?:Unterabsatz|Unterabsätze|UA) ' . $absatzNums . ')?(?: (?:Satz|S\.) [0-9]+)?(?: (?:Nummer|Nr\.) [0-9]+[a-z]?)?(?:,? ' . $buchstabenSimple . ')?';
         // $withNummerQualifier adds ~104 chars per call site (the qualifier regex itself is long);
         // $withSatzList/$withNummerList ~26 each — all default off and are opted into only where a
         // sentence actually needs them (currently just the compound §-list item pattern below),
@@ -293,7 +293,9 @@ class syntax_plugin_normi extends SyntaxPlugin
             // The "erste/zweite Alternative"/"Variante" qualifier may directly follow a Nummer
             // with no Buchstabe in between (e.g. "Nummer 2 erste Alternative"), not just a Buchstabe.
             // $withNummerList additionally covers "Nummer 4 und 8" for the same reason as Satz above.
-            . '(?: (?:Nummer|Nr\.) ' . $nummer . ($withNummerList ? '(?:(?: und| oder) [0-9]+)*' : '') . ')?' . ($withNummerQualifier ? $buchstabeQualifier : '')
+            . '(?: (?:Nummer|Nr\.) ' . $nummer . ($withNummerList ? '(?:(?: und| oder) [0-9]+[a-z]?)*' : '') . ')?' . ($withNummerQualifier ? $buchstabeQualifier : '')
+            // Satz may also follow the Nummer: "§ 99 Absatz 1 Nummer 13a Satz 1 des Aufenthaltsgesetzes"
+            . '(?: (?:Satz|S\.) [0-9]+)?'
             . '(?:,? ' . $buchstaben . ')?'
             // Bare comma is also accepted here (not just $connector) because the keyword
             // "Absatz|Abs." immediately follows, which disambiguates it from a comma that
@@ -302,12 +304,12 @@ class syntax_plugin_normi extends SyntaxPlugin
             // Unlike the word connectors, a comma has no leading space of its own (it attaches
             // directly to the preceding token: "...Nummer 2, Absatz 2a", not "...Nummer 2 , Absatz 2a").
             . '(?:(?:(?: ' . $connector . ')|,) (?:(?:Absatz|Abs\.) ' . $absatzNums . ')' . $extSubParts . ')*';
-        $subPartsInner = $buildSubParts('[0-9]+', '(?:und|oder|sowie)');
+        $subPartsInner = $buildSubParts('[0-9]+[a-z]?', '(?:und|oder|sowie)');
         // Variant used only by the single-item patterns, with a Nummer list ("Nummer 1, 3 und 4",
         // "Nr. 1 bis 3") and "in Verbindung mit"/"i. V. m." before a further Absatz ("§ 81 Absatz 5 in
         // Verbindung mit Absatz 3 oder Absatz 4"): in the compound patterns subPartsInner occurs
         // repeatedly, and these there push the combined Lexer master regex over PCRE's compiled-size limit
-        $subPartsListInner = $buildSubParts('[0-9]+(?:(?:,| und| oder| sowie| bis) [0-9]+)*', '(?:und|oder|sowie|in Verbindung mit|i\. ?V\. ?m\.)');
+        $subPartsListInner = $buildSubParts('[0-9]+[a-z]?(?:(?:,| und| oder| sowie| bis) [0-9]+[a-z]?)*', '(?:und|oder|sowie|in Verbindung mit|i\. ?V\. ?m\.)');
         $subParts     = '(?:' . $subPartsInner . ')?';
         $subPartsList = '(?:' . $subPartsListInner . ')?';
 
@@ -360,7 +362,7 @@ class syntax_plugin_normi extends SyntaxPlugin
         // paid for only here, where they keep such a number attached to its own § instead of being
         // mistaken for the next item; parseMatch()'s tokenizer shrinks a greedy match if it
         // swallows the next item's number.
-        $sectionItemSubParts = $buildSubParts('[0-9]+', '(?:und|oder|sowie)', true, true, true);
+        $sectionItemSubParts = $buildSubParts('[0-9]+[a-z]?', '(?:und|oder|sowie)', true, true, true);
         $sectionItemPat = '(?:(?:die |den )?(?:des )?§(?:§)? )?[0-9]+[a-z]?(?: bis [0-9]+[a-z]?)?(?:' . $sectionItemSubParts . ')?';
         $sectionSep     = '(?:,| und| oder| sowie) ';
         $this->lexerSectionItemPattern = $sectionItemPat;
