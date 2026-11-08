@@ -45,6 +45,8 @@ Wird kein Rechtsaktname genannt, versucht das Plugin, die gemeinte Norm aus dem 
 
 Lässt sich weder aus der Überschrift noch aus der Page-ID eine bekannte Norm ableiten, bleibt der Ausdruck unverlinkt.
 
+Vorrang vor dem Seitenkontext hat ein **nachfolgend genanntes Gesetz derselben Aufzählung**: In `nach § 12 Absatz 1 oder § 13 Absatz 1 sowie die nach § 26 Absatz 1 der Deutschsprachförderverordnung` gehören alle drei Paragraphen zur DeuFöV, ebenso in `Artikel 42 Absatz 1 oder Artikel 67 Absatz 10 der Verordnung (EU) 2024/1351` beide Artikel zur AMM-Verordnung. Voraussetzung ist, dass zwischen den Verweisen nur Bindewörter stehen (Komma, `und`, `oder`, `sowie`, `bzw.`, ggf. mit Artikel oder Präposition wie `sowie die nach`) und alle Verweise gleichartig sind (nur `§` oder nur `Artikel`). Ist die Zuordnung im Einzelfall falsch, lässt sich der Verweis mit `!` unverlinkt lassen.
+
 ### Verlinkung unterdrücken (`!`)
 
 Ein vorangestelltes `!` (analog zu DokuWikis eigener `!CamelCase`-Schreibweise) weist normi an, die unmittelbar folgende Norm **überhaupt nicht** zu verlinken — weder ins Wiki noch extern (siehe [Normen ohne Wiki-Seite](#normen-ohne-wiki-seite)) — und stattdessen als reinen Text auszugeben, z. B. `!§ 14 BGB` oder `!Art. 5 Anerkennungsverordnung`. So bleibt der Text für andere Mechanismen (z. B. ein dejure.org-Verlinkungs-Plugin, das auf den gerenderten Text zugreift) zugänglich.

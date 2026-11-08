@@ -26,6 +26,8 @@ e.g. `Art. 5 Anerkennungsverordnung` or `Art. 12a Anerkennungsverordnung`.
 
 Laws *without* wiki pages are handled by `ExternalLaws.php` (class `dokuwiki\plugin\normi\ExternalLaws`, autoloaded by DokuWiki): the Lexer only checks the *shape* of the law name (`ExternalLaws::lexerPattern()`), `resolve()` maps it to an abbreviation, and the link goes to dejure.org → buzer.de → gesetze-im-internet.de, whichever carries the law first (checked once per law over HTTP, cached as `*.normi` in DokuWiki's cache dir). Such regulations are passed around as `ext:p:<abbr>` (§) / `ext:a:<abbr>` (Art.); `normLink()` in `syntax.php` decides between wiki and external link.
 
+`action.php` post-processes the finished call list (`PARSER_HANDLER_DONE`): a run of bare citations (`__current__`) joined only by connectors ("oder", "sowie die nach", ",") to a following citation of the same kind with an explicit law takes over that law. This needs no Lexer pattern, so prefer such post-processing over new patterns.
+
 `script.js`/`style.css` add hover previews of the linked wiki pages (via `do=export_xhtmlbody`).
 
 ### Lexer pitfalls

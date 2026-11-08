@@ -551,6 +551,13 @@ class syntax_plugin_normi extends SyntaxPlugin
                                 return ['match' => $match, 'compound' => $parsedItems, 'connectors' => $connectors, 'regulation' => $regSlug];
                             }
                         }
+                        // One item after all, whose tail only this item grammar knows (e.g. the
+                        // Satz list in "§ 29 Absatz 1 Satz 1 oder 3 des Verwaltungsverfahrensgesetzes"):
+                        // keep its law instead of falling through to the bare-§ branches below.
+                        if ($pos === $len && count($items) === 1
+                            && preg_match('/^(?:(?:die |den )?(?:des )?§(?:§)? )?([0-9]+[a-z]?)/', $items[0], $nm)) {
+                            return ['match' => $match, 'article' => strtolower($nm[1]), 'regulation' => $regSlug];
+                        }
                     }
                 }
             }
