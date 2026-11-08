@@ -10,17 +10,13 @@ use dokuwiki\Extension\EventHandler;
  * In "nach § 12 Absatz 1 oder § 13 Absatz 1 sowie die nach § 26 Absatz 1 der
  * Deutschsprachförderverordnung" the law is named only once, after the last item; the bare
  * "§ 12 Absatz 1" and "§ 13 Absatz 1" belong to it too, not to the law of the current page.
- * The Lexer sees each citation on its own, so this is done on the finished call list: a run of
- * bare citations ("__current__") that is joined to an explicit citation of the same kind (§ or
- * Artikel) only by connectors (",", "oder", "sowie die nach", …) takes over its regulation.
+ * syntax_plugin_normi::handle() already does this for plain paragraphs; this pass over the
+ * finished call list also covers tables, list items and footnotes, whose calls are buffered
+ * while they are handled. A run of bare citations ("__current__") joined to an explicit citation
+ * of the same kind (§ or Artikel) only by connectors takes over its regulation.
  */
 class action_plugin_normi extends ActionPlugin
 {
-    /** Text allowed between two citations of one list: connectors, articles, prepositions. */
-    private const GAP = '/^[,;]?(?: (?:und|oder|sowie|bzw\.|beziehungsweise|und\/oder|auch|ferner|die|der|das|den|dem|des|nach|gemäß|aus|in|im|von|zu|auf))* $/';
-    /** …but the gap must contain an actual list connector. */
-    private const CONNECTOR = '/^[,;]| (?:und|oder|sowie|bzw\.|beziehungsweise|und\/oder) /';
-
     /** @inheritDoc */
     public function register(EventHandler $controller)
     {
@@ -56,7 +52,7 @@ class action_plugin_normi extends ActionPlugin
                 continue;
             }
             $data = ($call[0] === 'plugin' && $call[1][0] === 'normi') ? $call[1][1] : null;
-            $citationKind = $data === null ? null : self::kind($data);
+            $citationKind = $data === null ? null : syntax_plugin_normi::citationRunKind($data);
             if ($citationKind === null) {
                 // any other markup, or a regulation name on its own: ends the run
                 $pending = [];
@@ -64,9 +60,7 @@ class action_plugin_normi extends ActionPlugin
                 continue;
             }
 
-            $joined = $gap !== null && $citationKind === $kind
-                && preg_match(self::GAP, $gap) && preg_match(self::CONNECTOR, $gap);
-            if (!$joined) {
+            if ($gap === null || $citationKind !== $kind || !syntax_plugin_normi::joinsList($gap)) {
                 $pending = [];
             }
 
@@ -86,18 +80,5 @@ class action_plugin_normi extends ActionPlugin
             $gap = null;
         }
         return $calls;
-    }
-
-    /** "§" or "Art" for a citation, null for an ignored one or a bare regulation name. */
-    private static function kind(array $data): ?string
-    {
-        if (!empty($data['ignore'])) {
-            return null;
-        }
-        if (($data['article'] ?? null) === null
-            && !isset($data['compound']) && !isset($data['rangelist']) && !isset($data['articles'])) {
-            return null;
-        }
-        return preg_match('/^(?:die |den )?(?:des )?§/', $data['match']) ? '§' : 'Art';
     }
 }

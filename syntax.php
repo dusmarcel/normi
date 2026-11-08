@@ -419,7 +419,68 @@ class syntax_plugin_normi extends SyntaxPlugin
         }
         $data = $this->parseMatch($match);
         $data['ignore'] = $ignore;
+        if (!$ignore && $data['regulation'] !== null && $data['regulation'] !== '__current__') {
+            self::inheritBackwards($handler, $data);
+        }
         return $data;
+    }
+
+    /** Text allowed between two citations of one list: connectors, articles, prepositions. */
+    public const INHERIT_GAP = '/^[,;]?(?: (?:und|oder|sowie|bzw\.|beziehungsweise|und\/oder|auch|ferner|die|der|das|den|dem|des|nach|gemäß|aus|in|im|von|zu|auf))* $/';
+    /** …but the gap must contain an actual list connector. */
+    public const INHERIT_CONNECTOR = '/^[,;]| (?:und|oder|sowie|bzw\.|beziehungsweise|und\/oder) /';
+
+    /** Whether the text between two citations joins them into one list. */
+    public static function joinsList(string $gap): bool
+    {
+        return preg_match(self::INHERIT_GAP, $gap) && preg_match(self::INHERIT_CONNECTOR, $gap);
+    }
+
+    /** "§" or "Art" for a linkable citation, null for an ignored one or a bare regulation name. */
+    public static function citationRunKind(array $data): ?string
+    {
+        if (!empty($data['ignore'])) {
+            return null;
+        }
+        if (($data['article'] ?? null) === null
+            && !isset($data['compound']) && !isset($data['rangelist']) && !isset($data['articles'])) {
+            return null;
+        }
+        return preg_match('/^(?:die |den )?(?:des )?§/', $data['match']) ? '§' : 'Art';
+    }
+
+    /**
+     * "nach § 12 Absatz 1 oder § 13 Absatz 1 sowie die nach § 26 Absatz 1 der
+     * Deutschsprachförderverordnung": the law is named only once, after the last item, but
+     * applies to the bare ("__current__") citations before it too. When the citation with the
+     * law is handled, the preceding ones are already in the handler's call list; a run of them
+     * joined only by connectors takes over its regulation. (action.php does the same on the
+     * finished call list, which also covers tables; this here works even if no action hooks run.)
+     */
+    private static function inheritBackwards(Doku_Handler $handler, array $data): void
+    {
+        $kind = self::citationRunKind($data);
+        // Only when calls go straight into the handler's list (not buffered by a table/list/footnote rewriter)
+        if ($kind === null || get_class($handler->getCallWriter()) !== \dokuwiki\Parsing\Handler\CallWriter::class) {
+            return;
+        }
+        $calls =& $handler->calls;
+        $i = count($calls) - 1;
+        while (true) {
+            $gap = '';
+            while ($i >= 0 && $calls[$i][0] === 'cdata') {
+                $gap = $calls[$i][1][0] . $gap;
+                $i--;
+            }
+            if ($i < 0 || !self::joinsList($gap)
+                || $calls[$i][0] !== 'plugin' || $calls[$i][1][0] !== 'normi'
+                || $calls[$i][1][1]['regulation'] !== '__current__'
+                || self::citationRunKind($calls[$i][1][1]) !== $kind) {
+                return;
+            }
+            $calls[$i][1][1]['regulation'] = $data['regulation'];
+            $i--;
+        }
     }
 
     private function parseMatch(string $match): array
