@@ -45,9 +45,10 @@ class action_plugin_normi extends ActionPlugin
                 $gap = null;
                 continue;
             }
-            if ($call[0] === 'cdata') {
+            $text = syntax_plugin_normi::callText($call);
+            if ($text !== null) {
                 if ($gap !== null) {
-                    $gap .= $call[1][0];
+                    $gap .= $text;
                 }
                 continue;
             }

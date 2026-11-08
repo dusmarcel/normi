@@ -436,6 +436,22 @@ class syntax_plugin_normi extends SyntaxPlugin
         return preg_match(self::INHERIT_GAP, $gap) && preg_match(self::INHERIT_CONNECTOR, $gap);
     }
 
+    /**
+     * The plain text a call stands for, or null if it is markup. Container plugins (e.g. the
+     * blockquote plugin's <blockquote>) emit the text inside them as their own plugin calls in
+     * the DOKU_LEXER_UNMATCHED state instead of "cdata".
+     */
+    public static function callText(array $call): ?string
+    {
+        if ($call[0] === 'cdata') {
+            return $call[1][0];
+        }
+        if ($call[0] === 'plugin' && ($call[1][2] ?? null) === DOKU_LEXER_UNMATCHED && is_string($call[1][3] ?? null)) {
+            return $call[1][3];
+        }
+        return null;
+    }
+
     /** "§" or "Art" for a linkable citation, null for an ignored one or a bare regulation name. */
     public static function citationRunKind(array $data): ?string
     {
@@ -468,8 +484,8 @@ class syntax_plugin_normi extends SyntaxPlugin
         $i = count($calls) - 1;
         while (true) {
             $gap = '';
-            while ($i >= 0 && $calls[$i][0] === 'cdata') {
-                $gap = $calls[$i][1][0] . $gap;
+            while ($i >= 0 && ($text = self::callText($calls[$i])) !== null) {
+                $gap = $text . $gap;
                 $i--;
             }
             if ($i < 0 || !self::joinsList($gap)
