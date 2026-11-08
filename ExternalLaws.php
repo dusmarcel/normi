@@ -209,6 +209,8 @@ class ExternalLaws
             // "Bürgerlichen Gesetzbuchs", "Zwölften Buches Sozialgesetzbuch"
             . '|' . $u . $l . '*(?:en|es) (?:Gesetzbuch(?:e?s)?|Buch(?:es)? (?:des )?Sozialgesetzbuch(?:es)?)' . $end
             . '|SGB [IVX]+' . $end
+            // "AZR-Gesetzes", "BKA-Gesetz"
+            . '|[A-Z]{2,}-Gesetz(?:es)?' . $end
             . '|' . $abbr;
     }
 
@@ -221,6 +223,10 @@ class ExternalLaws
         }
         if (in_array($term, self::NOT_LAWS, true)) {
             return null;
+        }
+        // "AZR-Gesetz(es)" → AZRG, "BKA-Gesetz" → BKAG
+        if (!$article && preg_match('~^([A-Z]{2,})-Gesetz(?:es)?$~', $term, $m)) {
+            return $m[1] . 'G';
         }
         // Any other abbreviation-shaped token; long forms must be in the table.
         if (preg_match('~^' . self::abbreviationShape() . '$~', $term)) {
